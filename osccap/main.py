@@ -97,13 +97,19 @@ class ConfigSettings:
         self.active_scope_id = 0
         self.scopes = list()
 
-    def _check_windows_registry(self):
-        if not on_win:
-            raise RuntimeError('You are not on a windows platform')
+    def load(self):
+        if on_win:
+            config.load_from_win_registry()
+        else:
+            config.load_from_dot_config()
+
+    def save(self):
+        if on_win:
+            config.save_to_win_registry()
+        else:
+            config.save_to_dot_config()
 
     def load_from_win_registry(self):
-        self._check_windows_registry()
-
         r = reg.ConnectRegistry(None, reg.HKEY_CURRENT_USER)
         # load scope definitions
         k = reg.OpenKey(r, r'Software\OscCap\Scopes')
@@ -132,13 +138,18 @@ class ConfigSettings:
         reg.CloseKey(k)
 
     def save_to_win_registry(self):
-        self._check_windows_registry()
         r = reg.ConnectRegistry(None, reg.HKEY_CURRENT_USER)
         # save common program properties
         k = reg.OpenKey(r, r'Software\OscCap', 0, reg.KEY_WRITE)
         reg.SetValueEx(k, 'LastActiveScope', None, reg.REG_DWORD,
                 self.active_scope_id)
         reg.CloseKey(k)
+
+    def load_from_dot_config(self):
+        pass
+
+    def save_to_dot_config(self):
+        pass
 
 # There is only one configuration, create it
 config = ConfigSettings()
@@ -239,7 +250,7 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
 
     def on_exit(self, event):
         config.active_scope_id = self.active_scope.id
-        config.save_to_win_registry()
+        config.save()
         wx.CallAfter(self.Destroy)
         wx.CallAfter(self.frame.Destroy)
 
@@ -258,7 +269,7 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
         wx.AboutBox(info)
 
 def main():
-    config.load_from_win_registry()
+    config.load()
     app = wx.PySimpleApp()
     OscCapTaskBarIcon()
     app.MainLoop()
