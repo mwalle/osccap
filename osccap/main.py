@@ -56,7 +56,12 @@ log = logging.getLogger(__name__)
 OSC_TYPE_TEKTRONIX_TDS = 0
 OSC_TYPE_AGILENT = 1
 
-DATA_PATH = os.path.join(os.path.dirname(sys.argv[0]), 'data')
+try:
+    from pkg_resources import resource_filename
+    DATA_PATH = resource_filename(__name__, 'data')
+except ImportError:
+    DATA_PATH = os.path.join(os.path.dirname(__file__), 'data')
+
 ICON = os.path.join(DATA_PATH, 'osccap-64.png')
 TRAY_ICON = os.path.join(DATA_PATH, 'osccap-16.png')
 TRAY_ICON_BUSY = os.path.join(DATA_PATH, 'osccap-busy-16.png')
