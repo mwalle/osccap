@@ -118,7 +118,7 @@ def try_query_value(k, value_name, default):
 
 class ConfigSettings:
     def __init__(self):
-        self.active_scope = 0
+        self.active_scope_id = 0
         self.scopes = list()
 
     def _check_windows_registry(self):
@@ -151,7 +151,7 @@ class ConfigSettings:
 
         # load common program properties
         k = reg.OpenKey(r, r'Software\OscCap')
-        self.active_scope = try_query_value(k, 'LastActiveScope',
+        self.active_scope_id = try_query_value(k, 'LastActiveScope',
                 self.scopes[0].id)
         reg.CloseKey(k)
 
@@ -161,22 +161,26 @@ class ConfigSettings:
         # save common program properties
         k = reg.OpenKey(r, r'Software\OscCap', 0, reg.KEY_WRITE)
         reg.SetValueEx(k, 'LastActiveScope', None, reg.REG_DWORD,
-                self.active_scope)
+                self.active_scope_id)
         reg.CloseKey(k)
 
 # There is only one configuration, create it
 config = ConfigSettings()
+
+ID_HOTKEY = wx.NewId()
+ID_TO_CLIPBOARD = wx.NewId()
+ID_TO_FILE = wx.NewId()
 
 class OscCapTaskBarIcon(wx.TaskBarIcon):
     def __init__(self):
         wx.TaskBarIcon.__init__(self)
         self.set_icon(busy=False)
         self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
-        self._evt_id_offset = 10
+        self._create_scope_ids()
         # just for global hotkey binding
         if on_win:
             self.frame = wx.Frame(None, -1)
-            hotkey_id = wx.NewId()
+            hotkey_id = ID_HOTKEY
             self.frame.RegisterHotKey(hotkey_id, win32con.MOD_ALT,
                     win32con.VK_F1)
             self.frame.Bind(wx.EVT_HOTKEY, self.on_to_clipboard, id=hotkey_id)
@@ -188,60 +192,77 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
             icon = wx.IconFromBitmap(wx.Bitmap(TRAY_ICON_BUSY))
         self.SetIcon(icon, TRAY_TOOLTIP)
 
+    def _create_scope_ids(self):
+        self.scopes = dict()
+        self.active_scope = None
+        for scope in config.scopes:
+            id = wx.NewId()
+            self.scopes[id] = scope
+            if scope.id == config.active_scope_id:
+                self.active_scope = scope
+        if self.active_scope is None:
+            self.active_scope = config.scopes[0]
+
     def CreatePopupMenu(self):
         menu = wx.Menu()
-        item = wx.MenuItem(menu, wx.NewId(), 'To clipboard')
+        item = wx.MenuItem(menu, ID_TO_CLIPBOARD, 'To clipboard')
         menu.Bind(wx.EVT_MENU, self.on_to_clipboard, id=item.GetId())
         menu.AppendItem(item)
-        item = wx.MenuItem(menu, wx.NewId(), 'To file..')
+        item = wx.MenuItem(menu, ID_TO_FILE, 'To file..')
         menu.Bind(wx.EVT_MENU, self.on_to_file, id=item.GetId())
         menu.AppendItem(item)
         menu.AppendSeparator()
-        for scope in config.scopes:
-            id = self._evt_id_offset + scope.id
-            name = scope.name
-            item = menu.AppendCheckItem(id, name)
-            self.Bind(wx.EVT_MENU, self.on_host_select, item, id=item.GetId())
-            if scope.id == config.active_scope:
-                menu.Check(item.GetId(), True)
+        for id, scope in sorted(self.scopes.items()):
+            item = menu.AppendCheckItem(id, scope.name)
+            self.Bind(wx.EVT_MENU, self.on_host_select, item, id=id)
+            if scope == self.active_scope:
+                menu.Check(id, True)
         menu.AppendSeparator()
-        item = wx.MenuItem(menu, wx.NewId(), 'About..')
+        item = wx.MenuItem(menu, wx.ID_ABOUT, 'About..')
         menu.Bind(wx.EVT_MENU, self.on_about, id=item.GetId())
         menu.AppendItem(item)
-        item = wx.MenuItem(menu, wx.NewId(), 'Exit')
+        item = wx.MenuItem(menu, wx.ID_EXIT, 'Exit')
         menu.Bind(wx.EVT_MENU, self.on_exit, id=item.GetId())
         menu.AppendItem(item)
 
         return menu
 
-    def _scope_by_id(self, id):
-        for scope in config.scopes:
-            if scope.id == id:
-                return scope
-        raise RuntimeError('no scope with id %d' % id)
+    def copy_screenshot_to_clipboard(self):
+        if self.active_scope:
+            self.set_icon(busy=True)
+            copy_screenshot_to_clipboard(self.active_scope.host)
+            self.set_icon(busy=False)
+
+    def save_screenshot_to_file(self, filename):
+        if self.active_scope:
+            self.set_icon(busy=True)
+            save_screenshot_to_file(self.active_scope.host, filename)
+            self.set_icon(busy=False)
 
     def on_to_clipboard(self, event):
-        host = config.scopes[config.active_scope].host
-        copy_screenshot_to_clipboard(host)
+        self.copy_screenshot_to_clipboard()
 
     def on_to_file(self, event):
         d = wx.FileDialog(None, "Save to", wildcard="*.png",
                 style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         if d.ShowModal() == wx.ID_OK:
-            host = config.scopes[config.active_scope].host
             filename = os.path.join(d.GetDirectory(), d.GetFilename())
-            save_screenshot_to_file(host, filename)
+            self.save_screenshot_to_file(filename)
         d.Destroy()
 
     def on_host_select(self, event):
-        id = event.GetId() - self._evt_id_offset
-        config.active_scope = id
+        event_id = event.GetId()
+        self.active_scope = None
+        for id, scope in self.scopes.items():
+            if id == event_id:
+                self.active_scope = scope
+                break
 
     def on_left_down(self, event):
-        host = config.scopes[config.active_scope]
-        copy_screenshot_to_clipboard(host)
+        self.copy_screenshot_to_clipboard()
 
     def on_exit(self, event):
+        config.active_scope_id = self.active_scope.id
         config.save_to_win_registry()
         wx.CallAfter(self.Destroy)
         wx.CallAfter(self.frame.Destroy)
