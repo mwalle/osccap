@@ -99,12 +99,6 @@ def save_screenshot_to_file(host, filename):
     f.write(screen)
     f.close()
 
-def create_menu_item(menu, label, func):
-    item = wx.MenuItem(menu, -1, label)
-    menu.Bind(wx.EVT_MENU, func, id=item.GetId())
-    menu.AppendItem(item)
-    return item
-
 def try_query_value(k, value_name, default):
     try:
         return reg.QueryValueEx(k, value_name)[0]
