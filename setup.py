@@ -7,7 +7,15 @@ def main():
             version = '0.1',
             description = 'Capture screenshot from digital oscilloscopes.',
             author_email = 'michael@walle.cc',
-            scripts = ['osccap.py'],
+            options = {
+                'bdist_wininst':
+                    {'install_script': 'postinstall.py',
+                    },
+                'bdist_msi':
+                    {'install_script': 'postinstall.py',
+                    },
+            },
+            scripts = ['osccap.py', 'postinstall.py'],
             include_package_data = True,
     )
 
