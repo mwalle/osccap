@@ -1,4 +1,5 @@
 import sys
+import os
 import osccap
 
 def install():
@@ -9,17 +10,21 @@ def install():
         # otherwise, continue with user folder
         folder = get_special_folder_path('CSIDL_PROGRAMS')
 
+    print "Creating shortcut..",
     dst = os.path.join(folder, 'osccap.lnk')
+    icon = os.path.join(os.path.dirname(osccap.__file__), 'data', 'osccap.ico')
     create_shortcut(
             os.path.join(sys.prefix, 'pythonw.exe'),
             'OscCap',
             dst,
-            osccap.__file__,
+            '-m osccap.main',
             '',
+            icon,
     )
-
     file_created(dst)
+    print "done"
+
 
 if __name__ == '__main__':
-    if len(sys.args) == 2 and sys.args[1] == '-install':
+    if len(sys.argv) == 2 and sys.argv[1] == '-install':
         install()

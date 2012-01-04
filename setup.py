@@ -9,14 +9,16 @@ def main():
             author_email = 'michael@walle.cc',
             options = {
                 'bdist_wininst':
-                    {'install_script': 'postinstall.py',
+                    {'install_script': 'osccap_postinstall.py',
                     },
                 'bdist_msi':
-                    {'install_script': 'postinstall.py',
+                    {'install_script': 'osccap_postinstall.py',
                     },
             },
-            scripts = ['osccap.py', 'postinstall.py'],
-            include_package_data = True,
+            packages = find_packages(),
+            package_data = {'osccap': ['data/*.png', 'data/osccap.ico']},
+            #scripts = ['osccap.py', 'osccap_postinstall.py'],
+            scripts = ['osccap_postinstall.py'],
     )
 
 if __name__ == '__main__':
