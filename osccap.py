@@ -58,15 +58,10 @@ log = logging.getLogger(__name__)
 OSC_TYPE_TEKTRONIX_TDS = 0
 OSC_TYPE_AGILENT = 1
 
-#import pkg_resources
-#ICON = pkg_resources.resource_filename(__name__, 'data/osccap-64.png')
-#TRAY_ICON = pkg_resources.resource_filename(__name__, 'data/osccap-16.png')
-#TRAY_ICON_BUSY = \
-#        pkg_resources.resource_filename(__name__, 'data/osccap-busy-16.png')
-
-ICON = 'data/osccap-64.png'
-TRAY_ICON = 'data/osccap-16.png'
-TRAY_ICON_BUSY = 'data/osccap-busy-16.png'
+DATA_PATH = os.path.join(os.path.dirname(sys.argv[0]), 'data')
+ICON = os.path.join(DATA_PATH, 'osccap-64.png')
+TRAY_ICON = os.path.join(DATA_PATH, 'osccap-16.png')
+TRAY_ICON_BUSY = os.path.join(DATA_PATH, 'osccap-busy-16.png')
 TRAY_TOOLTIP = 'OscCap v%s' % __version__
 
 def take_screenshot_png(host, fullscreen=True):
@@ -270,7 +265,7 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
     def on_about(self, event):
         info = wx.AboutDialogInfo()
 
-        info.SetIcon(wx.Icon(ICON, wx.BITMAP_TYPE_PNG))
+        #info.SetIcon(wx.Icon(ICON, wx.BITMAP_TYPE_PNG))
         info.SetName('OscCap')
         info.SetVersion(__version__)
         info.SetDescription(__description__)
