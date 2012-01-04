@@ -30,6 +30,9 @@ if sys.platform.startswith('win'):
 else:
     on_win = False
 
+import tektronix
+import agilent
+
 __version__ = '0.1'
 
 __description__ = """OscCap is a small utility to capture screenshots from
@@ -67,12 +70,8 @@ TRAY_ICON = os.path.join(DATA_PATH, 'osccap-16.png')
 TRAY_ICON_BUSY = os.path.join(DATA_PATH, 'osccap-busy-16.png')
 TRAY_TOOLTIP = 'OscCap v%s' % __version__
 
-# XXX
-import tektronix
-take_screenshot_png = tektronix.take_screenshot_png
-
-def copy_screenshot_to_clipboard(host):
-    screen = take_screenshot_png(host)
+def copy_screenshot_to_clipboard(host, screenshot_func):
+    screen = screenshot_func(host)
     stream = StringIO.StringIO(screen)
     bmp = wx.BitmapFromImage(wx.ImageFromStream(stream))
     cbbmp = wx.BitmapDataObject(bmp)
@@ -80,8 +79,8 @@ def copy_screenshot_to_clipboard(host):
         wx.TheClipboard.SetData(cbbmp)
         wx.TheClipboard.Close()
 
-def save_screenshot_to_file(host, filename):
-    screen = take_screenshot_png(host)
+def save_screenshot_to_file(host, filename, screenshot_func):
+    screen = screenshot_func(host)
     f = open(filename, 'wb')
     f.write(screen)
     f.close()
@@ -221,14 +220,26 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
 
     def copy_screenshot_to_clipboard(self):
         if self.active_scope:
+            if self.active_scope.type == OSC_TYPE_TEKTRONIX_TDS:
+                func = tektronix.take_screenshot_png
+            elif self.active_scope.type == OSC_TYPE_AGILENT:
+                func = agilent.take_screenshot_png
+            else:
+                return
             self.set_icon(busy=True)
-            copy_screenshot_to_clipboard(self.active_scope.host)
+            copy_screenshot_to_clipboard(self.active_scope.host, func)
             self.set_icon(busy=False)
 
     def save_screenshot_to_file(self, filename):
         if self.active_scope:
+            if self.active_scope.type == OSC_TYPE_TEKTRONIX_TDS:
+                func = tektronix.take_screenshot_png
+            elif self.active_scope.type == OSC_TYPE_AGILENT:
+                func = agilent.take_screenshot_png
+            else:
+                return
             self.set_icon(busy=True)
-            save_screenshot_to_file(self.active_scope.host, filename)
+            save_screenshot_to_file(self.active_scope.host, filename, func)
             self.set_icon(busy=False)
 
     def on_to_clipboard(self, event):
