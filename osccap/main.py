@@ -264,7 +264,7 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
     def on_about(self, event):
         info = wx.AboutDialogInfo()
 
-        #info.SetIcon(wx.Icon(ICON, wx.BITMAP_TYPE_PNG))
+        info.SetIcon(wx.Icon(ICON, wx.BITMAP_TYPE_PNG))
         info.SetName('OscCap')
         info.SetVersion(__version__)
         info.SetDescription(__description__)
