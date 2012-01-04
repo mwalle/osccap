@@ -171,6 +171,8 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
             self.frame.RegisterHotKey(hotkey_id, win32con.MOD_ALT,
                     win32con.VK_F1)
             self.frame.Bind(wx.EVT_HOTKEY, self.on_to_clipboard, id=hotkey_id)
+        else:
+            self.frame = None
 
     def set_icon(self, busy=False):
         if not busy:
@@ -187,8 +189,6 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
             self.scopes[id] = scope
             if scope.id == config.active_scope_id:
                 self.active_scope = scope
-        if self.active_scope is None:
-            self.active_scope = config.scopes[0]
 
     def CreatePopupMenu(self):
         menu = wx.Menu()
@@ -199,11 +199,16 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
         menu.Bind(wx.EVT_MENU, self.on_to_file, id=item.GetId())
         menu.AppendItem(item)
         menu.AppendSeparator()
-        for id, scope in sorted(self.scopes.items()):
-            item = menu.AppendCheckItem(id, scope.name)
-            self.Bind(wx.EVT_MENU, self.on_host_select, item, id=id)
-            if scope == self.active_scope:
-                menu.Check(id, True)
+        if len(self.scopes) == 0:
+            item = wx.MenuItem(menu, -1, 'No scopes')
+            menu.AppendItem(item)
+            menu.Enable(item.GetId(), False)
+        else:
+            for id, scope in sorted(self.scopes.items()):
+                item = menu.AppendCheckItem(id, scope.name)
+                self.Bind(wx.EVT_MENU, self.on_host_select, item, id=id)
+                if scope == self.active_scope:
+                    menu.Check(id, True)
         menu.AppendSeparator()
         item = wx.MenuItem(menu, wx.ID_ABOUT, 'About..')
         menu.Bind(wx.EVT_MENU, self.on_about, id=item.GetId())
@@ -249,10 +254,12 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
         self.copy_screenshot_to_clipboard()
 
     def on_exit(self, event):
-        config.active_scope_id = self.active_scope.id
+        if self.active_scope:
+            config.active_scope_id = self.active_scope.id
         config.save()
         wx.CallAfter(self.Destroy)
-        wx.CallAfter(self.frame.Destroy)
+        if self.frame:
+            wx.CallAfter(self.frame.Destroy)
 
     def on_about(self, event):
         info = wx.AboutDialogInfo()
