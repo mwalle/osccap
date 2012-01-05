@@ -57,6 +57,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA"""
 
 OscProperties = namedtuple('OscProperties', 'id name host type')
+HotKey = namedtuple('HotKey', 'modifiers keycode')
 log = logging.getLogger(__name__)
 
 OSC_TYPE_TEKTRONIX_TDS = 0
@@ -98,6 +99,7 @@ class ConfigSettings:
     def __init__(self):
         self.active_scope_id = 0
         self.scopes = list()
+        self.hotkey = None
 
     def load(self):
         if on_win:
@@ -137,6 +139,10 @@ class ConfigSettings:
         k = reg.OpenKey(r, r'Software\OscCap')
         self.active_scope_id = try_query_value(k, 'LastActiveScope',
                 self.scopes[0].id)
+        hk_modifiers = try_query_value(k, 'HotkeyModifiers', None)
+        hk_keycode = try_query_value(k, 'HotkeyKeycode', None)
+        if (hk_modifiers, hk_keycode) != (None, None):
+            self.hotkey = HotKey(hk_modifiers, hk_keycode)
         reg.CloseKey(k)
 
     def save_to_win_registry(self):
@@ -200,12 +206,11 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
         self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
         self._create_scope_ids()
         # just for global hotkey binding
-        if on_win:
+        if on_win and config.hotkey is not None:
             self.frame = wx.Frame(None, -1)
-            hotkey_id = ID_HOTKEY
-            self.frame.RegisterHotKey(hotkey_id, win32con.MOD_ALT,
-                    win32con.VK_F1)
-            self.frame.Bind(wx.EVT_HOTKEY, self.on_to_clipboard, id=hotkey_id)
+            self.frame.RegisterHotKey(ID_HOTKEY, config.hotkey.modifiers,
+                    config.hotkey.keycode)
+            self.frame.Bind(wx.EVT_HOTKEY, self.on_to_clipboard, id=ID_HOTKEY)
         else:
             self.frame = None
 
