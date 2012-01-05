@@ -238,6 +238,8 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
             item = wx.MenuItem(menu, -1, 'No scopes')
             menu.AppendItem(item)
             menu.Enable(item.GetId(), False)
+            menu.Enable(ID_TO_CLIPBOARD, False)
+            menu.Enable(ID_TO_FILE, False)
         else:
             for id, scope in sorted(self.scopes.items()):
                 item = menu.AppendCheckItem(id, scope.name)
