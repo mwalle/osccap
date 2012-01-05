@@ -16,9 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import os
 import os.path
 import StringIO
 from collections import namedtuple
+from ConfigParser import SafeConfigParser
+import ConfigParser
 
 import wx
 
@@ -145,10 +148,43 @@ class ConfigSettings:
         reg.CloseKey(k)
 
     def load_from_dot_config(self):
-        pass
+        filename = os.path.expanduser('~/.osccaprc')
+        parser = SafeConfigParser()
+        try:
+            parser.readfp(open(filename, 'r'))
+        except IOError:
+            return
+        try:
+            self.active_scope_id = parser.getint('global', 'last_active_scope')
+        except ConfigParser.NoSectionError:
+            pass
+        except ConfigParser.NoOptionError:
+            pass
+        for s in parser.sections():
+            if s.startswith('scope'):
+                try:
+                    id = parser.getint(s, 'id')
+                    name = parser.get(s, 'name')
+                    host = parser.get(s, 'host')
+                    type = parser.getint(s, 'type')
+                    self.scopes.append(OscProperties(id, name, host, type))
+                except ConfigParser.NoOptionError:
+                    pass
+        self.scopes.sort(key=lambda e: e.id)
 
     def save_to_dot_config(self):
-        pass
+        filename = os.path.expanduser('~/.osccaprc')
+        parser = SafeConfigParser()
+        fd = open(filename, 'r')
+        parser.readfp(fd)
+        try:
+            parser.add_section('global')
+        except ConfigParser.DuplicateSectionError:
+            pass
+        parser.set('global', 'last_active_scope', str(self.active_scope_id))
+        fd = open(filename + '~', 'w')
+        parser.write(fd)
+        os.rename(filename + '~', filename)
 
 # There is only one configuration, create it
 config = ConfigSettings()
