@@ -139,8 +139,8 @@ class ConfigSettings:
         k = reg.OpenKey(r, r'Software\OscCap')
         self.active_scope_id = try_query_value(k, 'LastActiveScope',
                 self.scopes[0].id)
-        hk_modifiers = try_query_value(k, 'HotkeyModifiers', None)
-        hk_keycode = try_query_value(k, 'HotkeyKeycode', None)
+        hk_modifiers = try_query_value(k, 'HotKeyModifiers', None)
+        hk_keycode = try_query_value(k, 'HotKeyKeycode', None)
         if (hk_modifiers, hk_keycode) != (None, None):
             self.hotkey = HotKey(hk_modifiers, hk_keycode)
         reg.CloseKey(k)
