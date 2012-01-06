@@ -36,7 +36,7 @@ else:
 import tektronix
 import agilent
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 __description__ = """OscCap is a small utility to capture screenshots from
 various digial oscilloscopes. Screenshots can either be copied to the clipboard

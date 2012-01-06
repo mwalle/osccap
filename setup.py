@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 def main():
     setup(name = 'osccap',
-            version = '0.2',
+            version = '0.3',
             description = 'Capture screenshot from digital oscilloscopes.',
             author_email = 'michael@walle.cc',
             options = {
