@@ -29,6 +29,7 @@ import sys
 if sys.platform.startswith('win'):
     import _winreg as reg
     import win32con
+    import win32gui
     on_win = True
 else:
     on_win = False
@@ -202,7 +203,8 @@ ID_TO_FILE = wx.NewId()
 class OscCapTaskBarIcon(wx.TaskBarIcon):
     def __init__(self):
         wx.TaskBarIcon.__init__(self)
-        self.set_icon(busy=False)
+        self.busy = False
+        self.set_icon()
         self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
         self._create_scope_ids()
         # just for global hotkey binding
@@ -214,12 +216,60 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
         else:
             self.frame = None
 
-    def set_icon(self, busy=False):
-        if not busy:
-            icon = wx.IconFromBitmap(wx.Bitmap(TRAY_ICON))
+    # from http://stackoverflow.com/questions/7523511
+    def ShowBallon(self, title, text, msec=0, flags=0):
+        if on_win and self.IsIconInstalled():
+            self._SetBallonTip(self.icon.GetHandle(), title, text, msec,
+                    flags)
+
+    def _SetBallonTip(self, hicon, title, msg, msec, flags):
+        infoFlags = 0
+        if flags & wx.ICON_INFORMATION:
+            infoFlags |= win32gui.NIIF_INFO
+        elif flags & wx.ICON_WARNING:
+            infoFlags |= win32gui.NIIF_WARNING
+        elif flags & wx.ICON_ERROR:
+            infoFlags |= win32gui.NIIF_ERROR
+
+        lpdata = (self._GetIconHandle(),
+                  99,  # XXX
+                  win32gui.NIF_MESSAGE | win32gui.NIF_INFO | win32gui.NIF_ICON,
+                  0,
+                  hicon,
+                  '',
+                  msg,
+                  msec,
+                  title,
+                  infoFlags,
+                  )
+        win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, lpdata)
+
+    def _GetIconHandle(self):
+        """
+        Find the icon window.
+        This is ugly but for now there is no way to find this window directly from wx
+        """
+        if not hasattr(self, "_chwnd"):
+            try:
+                for handle in wx.GetTopLevelWindows():
+                    if handle.GetWindowStyle():
+                        continue
+                    handle = handle.GetHandle()
+                    if len(win32gui.GetWindowText(handle)) == 0:
+                        self._chwnd = handle
+                        break
+                if not hasattr(self, "_chwnd"):
+                    raise Exception
+            except:
+                raise Exception, "Icon window not found"
+        return self._chwnd
+
+    def set_icon(self):
+        if not self.busy:
+            self.icon = wx.IconFromBitmap(wx.Bitmap(TRAY_ICON))
         else:
-            icon = wx.IconFromBitmap(wx.Bitmap(TRAY_ICON_BUSY))
-        self.SetIcon(icon, TRAY_TOOLTIP)
+            self.icon = wx.IconFromBitmap(wx.Bitmap(TRAY_ICON_BUSY))
+        self.SetIcon(self.icon, TRAY_TOOLTIP)
 
     def _create_scope_ids(self):
         self.scopes = dict()
@@ -270,12 +320,16 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
             else:
                 return
             try:
-                self.set_icon(busy=True)
+                self.busy = True
+                self.set_icon()
                 copy_screenshot_to_clipboard(self.active_scope.host, func)
             except:
+                self.ShowBallon("Error", "There was an error while capturing "
+                        "the screenshot!", flags=wx.ICON_ERROR);
                 pass
             finally:
-                self.set_icon(busy=False)
+                self.busy = False
+                self.set_icon()
 
     def save_screenshot_to_file(self, filename):
         if self.active_scope:
@@ -286,12 +340,14 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
             else:
                 return
             try:
-                self.set_icon(busy=True)
+                self.busy = True
+                self.set_icon()
                 save_screenshot_to_file(self.active_scope.host, filename, func)
             except:
                 pass
             finally:
-                self.set_icon(busy=False)
+                self.busy = False
+                self.set_icon()
 
     def on_to_clipboard(self, event):
         self.copy_screenshot_to_clipboard()
