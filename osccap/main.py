@@ -269,9 +269,13 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
                 func = agilent.take_screenshot_png
             else:
                 return
-            self.set_icon(busy=True)
-            copy_screenshot_to_clipboard(self.active_scope.host, func)
-            self.set_icon(busy=False)
+            try:
+                self.set_icon(busy=True)
+                copy_screenshot_to_clipboard(self.active_scope.host, func)
+            except:
+                pass
+            finally:
+                self.set_icon(busy=False)
 
     def save_screenshot_to_file(self, filename):
         if self.active_scope:
@@ -281,9 +285,13 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
                 func = agilent.take_screenshot_png
             else:
                 return
-            self.set_icon(busy=True)
-            save_screenshot_to_file(self.active_scope.host, filename, func)
-            self.set_icon(busy=False)
+            try:
+                self.set_icon(busy=True)
+                save_screenshot_to_file(self.active_scope.host, filename, func)
+            except:
+                pass
+            finally:
+                self.set_icon(busy=False)
 
     def on_to_clipboard(self, event):
         self.copy_screenshot_to_clipboard()
