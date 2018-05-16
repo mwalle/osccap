@@ -115,9 +115,11 @@ class ConfigSettings:
             config.save_to_dot_config()
 
     def load_from_win_registry(self):
-        r = reg.ConnectRegistry(None, reg.HKEY_CURRENT_USER)
         # load scope definitions
-        k = reg.OpenKey(r, r'Software\OscCap\Scopes')
+        try:
+            k = reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap\Scopes')
+        except WindowsError:
+            k = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, 'SOFTWARE\OscCap\Scopes')
         i = 0
         try:
             while True:
@@ -137,19 +139,25 @@ class ConfigSettings:
         self.scopes.sort(key=lambda e: e.id)
 
         # load common program properties
-        k = reg.OpenKey(r, r'Software\OscCap')
-        self.active_scope_id = try_query_value(k, 'LastActiveScope',
-                self.scopes[0].id)
+        try:
+            k = reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap')
+        except WindowsError:
+            reg.CreateKeyEx(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap')
+            k = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, 'SOFTWARE\OscCap')
         hk_modifiers = try_query_value(k, 'HotKeyModifiers', None)
         hk_keycode = try_query_value(k, 'HotKeyKeycode', None)
         if (hk_modifiers, hk_keycode) != (None, None):
             self.hotkey = HotKey(hk_modifiers, hk_keycode)
         reg.CloseKey(k)
+        # load local user properties
+        with reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap') as k:
+            self.active_scope_id = try_query_value(k, 'LastActiveScope',
+                    self.scopes[0].id)
 
     def save_to_win_registry(self):
-        r = reg.ConnectRegistry(None, reg.HKEY_CURRENT_USER)
         # save common program properties
-        k = reg.OpenKey(r, r'Software\OscCap', 0, reg.KEY_WRITE)
+        k = reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap',
+                0, reg.KEY_WRITE)
         reg.SetValueEx(k, 'LastActiveScope', None, reg.REG_DWORD,
                 self.active_scope_id)
         reg.CloseKey(k)
@@ -395,7 +403,7 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
 
 def main():
     config.load()
-    app = wx.PySimpleApp()
+    app = wx.App(False)
     OscCapTaskBarIcon()
     app.MainLoop()
 
