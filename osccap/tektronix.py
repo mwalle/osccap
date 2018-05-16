@@ -21,6 +21,7 @@ import pyvxi11
 def take_screenshot_png(host, fullscreen=True):
     dev = pyvxi11.Vxi11(host)
     dev.open()
+    dev.io_timeout = 10
     dev.write(r'EXPORT:FILENAME "C:\TEMP\SCREEN.PNG"')
     dev.write('EXPORT:FORMAT PNG')
     dev.write('EXPORT:IMAGE NORMAL')
@@ -31,6 +32,7 @@ def take_screenshot_png(host, fullscreen=True):
         dev.write('EXPORT:VIEW GRATICULE')
         dev.write('EXPORT:VIEW FULLNO')
     dev.write('EXPORT START')
+    time.sleep(3)
     dev.write(r'FILESYSTEM:PRINT "C:\TEMP\SCREEN.PNG", GPIB')
     time.sleep(0.5)
     img_data = dev.read()
