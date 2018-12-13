@@ -22,20 +22,51 @@ def take_screenshot_png(host, fullscreen=True):
     dev = pyvxi11.Vxi11(host)
     dev.open()
     dev.io_timeout = 10
-    dev.write(r'EXPORT:FILENAME "C:\TEMP\SCREEN.PNG"')
-    dev.write('EXPORT:FORMAT PNG')
-    dev.write('EXPORT:IMAGE NORMAL')
-    dev.write('EXPORT:PALETTE COLOR')
-    if fullscreen:
-        dev.write('EXPORT:VIEW FULLSCREEN')
+    dev.write('*IDN?')
+    scope_idn = dev.read()
+    if scope_idn.split(',')[0:2] == ['TEKTRONIX', 'TDS5104']:
+        dev.write(r'EXPORT:FILENAME "C:\TEMP\SCREEN.PNG"')
+        dev.write('EXPORT:FORMAT PNG')
+        dev.write('EXPORT:IMAGE NORMAL')
+        dev.write('EXPORT:PALETTE COLOR')
+        if fullscreen:
+            dev.write('EXPORT:VIEW FULLSCREEN')
+        else:
+            dev.write('EXPORT:VIEW GRATICULE')
+            dev.write('EXPORT:VIEW FULLNO')
+        dev.write('EXPORT START')
+        time.sleep(3)
+        dev.write(r'FILESYSTEM:PRINT "C:\TEMP\SCREEN.PNG", GPIB')
+        time.sleep(0.5)
+    elif scope_idn.split(',')[0:2] == ['TEKTRONIX', 'TDS7704']:
+        dev.write(r'EXPORT:FILENAME "C:\TEMP\SCREEN.PNG"')
+        dev.write('EXPORT:FORMAT PNG')
+        dev.write('EXPORT:IMAGE NORMAL')
+        dev.write('EXPORT:PALETTE COLOR')
+        if fullscreen:
+            dev.write('EXPORT:VIEW FULLSCREEN')
+        else:
+            dev.write('EXPORT:VIEW GRATICULE')
+            dev.write('EXPORT:VIEW FULLNO')
+        dev.write('EXPORT START')
+        time.sleep(3)
+        dev.write(r'FILESYSTEM:PRINT "C:\TEMP\SCREEN.PNG", GPIB')
+        time.sleep(0.5)
+    elif scope_idn.split(',')[0:2] == ['TEKTRONIX', 'MSO64']:
+        dev.write(r'SAVE:IMAGE "screen.png"')
+        save_time = 0
+        dev.write('*OPC?')
+        while dev.read() != '1\n':
+            time.sleep(0.01)
+            save_time += 1
+            dev.write('*OPC?')
+            if save_time > 10000:
+                raise Exception('save image takes longer than 10 seconds')
+        dev.write('FILESYSTEM:READFILE "screen.png"')
     else:
-        dev.write('EXPORT:VIEW GRATICULE')
-        dev.write('EXPORT:VIEW FULLNO')
-    dev.write('EXPORT START')
-    time.sleep(3)
-    dev.write(r'FILESYSTEM:PRINT "C:\TEMP\SCREEN.PNG", GPIB')
-    time.sleep(0.5)
+        raise Exception('scope type not known')
     img_data = dev.read()
     dev.write(r'FILESYSTEM:DELETE "C:\TEMP\SCREEN.PNG"')
     dev.close()
+
     return img_data
