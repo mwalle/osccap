@@ -65,8 +65,7 @@ def take_screenshot_png(host, fullscreen=True):
         dev.write('FILESYSTEM:READFILE "screen.png"')
     else:
         raise Exception('scope type not known')
-
-    img_data = dev.read_raw()
+    img_data = dev.read()
     dev.write(r'FILESYSTEM:DELETE "C:\TEMP\SCREEN.PNG"')
     dev.close()
 
