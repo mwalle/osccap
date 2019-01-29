@@ -18,24 +18,25 @@
 import logging
 import os
 import os.path
-import StringIO
+import io
 from collections import namedtuple
-from ConfigParser import SafeConfigParser
-import ConfigParser
+from configparser import SafeConfigParser
+import configparser
 
 import wx
+from wx import adv
 
 import sys
 if sys.platform.startswith('win'):
-    import _winreg as reg
+    import winreg as reg
     import win32con
     import win32gui
     on_win = True
 else:
     on_win = False
 
-import tektronix
-import agilent
+from . import tektronix
+from . import agilent
 
 __version__ = '0.3'
 
@@ -76,13 +77,15 @@ TRAY_ICON_BUSY = os.path.join(DATA_PATH, 'osccap-busy-16.png')
 TRAY_TOOLTIP = 'OscCap v%s' % __version__
 
 def copy_screenshot_to_clipboard(host, screenshot_func):
+    wx.InitAllImageHandlers()
     screen = screenshot_func(host)
-    stream = StringIO.StringIO(screen)
-    bmp = wx.BitmapFromImage(wx.ImageFromStream(stream))
+    stream = io.BytesIO(screen)
+    bmp = wx.Bitmap(wx.Image(stream))
     cbbmp = wx.BitmapDataObject(bmp)
     if wx.TheClipboard.Open():
         wx.TheClipboard.SetData(cbbmp)
         wx.TheClipboard.Close()
+
 
 def save_screenshot_to_file(host, filename, screenshot_func):
     screen = screenshot_func(host)
@@ -137,7 +140,7 @@ class ConfigSettings:
             pass
         reg.CloseKey(k)
         self.scopes.sort(key=lambda e: e.id)
-
+        
         # load common program properties
         try:
             k = reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap')
@@ -171,9 +174,9 @@ class ConfigSettings:
             return
         try:
             self.active_scope_id = parser.getint('global', 'last_active_scope')
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             pass
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         for s in parser.sections():
             if s.startswith('scope'):
@@ -183,7 +186,7 @@ class ConfigSettings:
                     host = parser.get(s, 'host')
                     type = parser.getint(s, 'type')
                     self.scopes.append(OscProperties(id, name, host, type))
-                except ConfigParser.NoOptionError:
+                except configparser.NoOptionError:
                     pass
         self.scopes.sort(key=lambda e: e.id)
 
@@ -194,7 +197,7 @@ class ConfigSettings:
         parser.readfp(fd)
         try:
             parser.add_section('global')
-        except ConfigParser.DuplicateSectionError:
+        except configparser.DuplicateSectionError:
             pass
         parser.set('global', 'last_active_scope', str(self.active_scope_id))
         fd = open(filename + '~', 'w')
@@ -204,16 +207,16 @@ class ConfigSettings:
 # There is only one configuration, create it
 config = ConfigSettings()
 
-ID_HOTKEY = wx.NewId()
-ID_TO_CLIPBOARD = wx.NewId()
-ID_TO_FILE = wx.NewId()
+ID_HOTKEY = wx.NewIdRef(count=1)
+ID_TO_CLIPBOARD = wx.NewIdRef(count=1)
+ID_TO_FILE = wx.NewIdRef(count=1)
 
-class OscCapTaskBarIcon(wx.TaskBarIcon):
+class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def __init__(self):
-        wx.TaskBarIcon.__init__(self)
+        wx.adv.TaskBarIcon.__init__(self)
         self.busy = False
         self.set_icon()
-        self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
+        self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
         self._create_scope_ids()
         # just for global hotkey binding
         if on_win and config.hotkey is not None:
@@ -269,21 +272,22 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
                 if not hasattr(self, "_chwnd"):
                     raise Exception
             except:
-                raise Exception, "Icon window not found"
+                raise Exception('Icon window not found')
         return self._chwnd
 
     def set_icon(self):
+        self.icon = wx.Icon()
         if not self.busy:
-            self.icon = wx.IconFromBitmap(wx.Bitmap(TRAY_ICON))
+             wx.Icon.CopyFromBitmap(self.icon, wx.Bitmap(TRAY_ICON))
         else:
-            self.icon = wx.IconFromBitmap(wx.Bitmap(TRAY_ICON_BUSY))
+             wx.Icon.CopyFromBitmap(self.icon, wx.Bitmap(TRAY_ICON_BUSY))
         self.SetIcon(self.icon, TRAY_TOOLTIP)
 
     def _create_scope_ids(self):
         self.scopes = dict()
         self.active_scope = None
         for scope in config.scopes:
-            id = wx.NewId()
+            id = wx.NewIdRef(count=1)
             self.scopes[id] = scope
             if scope.id == config.active_scope_id:
                 self.active_scope = scope
@@ -292,14 +296,14 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
         menu = wx.Menu()
         item = wx.MenuItem(menu, ID_TO_CLIPBOARD, 'To clipboard')
         menu.Bind(wx.EVT_MENU, self.on_to_clipboard, id=item.GetId())
-        menu.AppendItem(item)
+        menu.Append(item)
         item = wx.MenuItem(menu, ID_TO_FILE, 'To file..')
         menu.Bind(wx.EVT_MENU, self.on_to_file, id=item.GetId())
-        menu.AppendItem(item)
+        menu.Append(item)
         menu.AppendSeparator()
         if len(self.scopes) == 0:
             item = wx.MenuItem(menu, -1, 'No scopes')
-            menu.AppendItem(item)
+            menu.AppendCheckItem(item)
             menu.Enable(item.GetId(), False)
             menu.Enable(ID_TO_CLIPBOARD, False)
             menu.Enable(ID_TO_FILE, False)
@@ -312,10 +316,10 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
         menu.AppendSeparator()
         item = wx.MenuItem(menu, wx.ID_ABOUT, 'About..')
         menu.Bind(wx.EVT_MENU, self.on_about, id=item.GetId())
-        menu.AppendItem(item)
+        menu.Append(item)
         item = wx.MenuItem(menu, wx.ID_EXIT, 'Exit')
         menu.Bind(wx.EVT_MENU, self.on_exit, id=item.GetId())
-        menu.AppendItem(item)
+        menu.Append(item)
 
         return menu
 
@@ -388,7 +392,7 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
             wx.CallAfter(self.frame.Destroy)
 
     def on_about(self, event):
-        info = wx.AboutDialogInfo()
+        info = wx.adv.AboutDialogInfo()
 
         info.SetIcon(wx.Icon(ICON, wx.BITMAP_TYPE_PNG))
         info.SetName('OscCap')
@@ -399,7 +403,7 @@ class OscCapTaskBarIcon(wx.TaskBarIcon):
         info.SetLicence(__licence__)
         info.AddDeveloper('Michael Walle <michael@walle.cc>')
 
-        wx.AboutBox(info)
+        wx.adv.AboutBox(info)
 
 def main():
     config.load()
