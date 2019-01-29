@@ -16,10 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
-import pyvxi11
+import vxi11
 
 def take_screenshot_png(host, fullscreen=True):
-    dev = pyvxi11.Vxi11(host)
+    dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.io_timeout = 10
     dev.write('*IDN?')

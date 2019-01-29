@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
-import pyvxi11
+import vxi11
 
 def binary_block(data):
     len_digits = int(data[1])
@@ -24,9 +24,9 @@ def binary_block(data):
     return data[2+len_digits:]
 
 def take_screenshot_png(host, fullscreen=True):
-    dev = pyvxi11.Vxi11(host)
+    dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.write(':DISPLAY:DATA? PNG')
-    img_data = binary_block(dev.read())
+    img_data = binary_block(dev.read_raw())
     dev.close()
     return img_data
