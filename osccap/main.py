@@ -97,6 +97,7 @@ def save_screenshot_to_file(host, filename, screenshot_func):
 def save_waveform_to_file(host, filename, waveform_func):
     waveform = waveform_func(host, self.channel)
     f = open(filename, 'wb')
+    print("starting write")
     wr = csv.writer(f)
     values = zip(values)
     for value in values:
@@ -412,6 +413,8 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.set_icon()
                 save_waveform_to_file(self.active_scope.host, filename, func)
             except:
+                self.ShowBallon("Error", "There was an error while capturing "
+                        "the waveform!", flags=wx.ICON_ERROR);
                 pass
             finally:
                 self.busy = False
