@@ -38,18 +38,19 @@ def take_screenshot_png(host, fullscreen=True):
     return img_data
 
 def take_waveform_word(host, filename, channel):
+    print("begin")
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.write(':WAVEFORM:SOURCE ' + channel)
     dev.write(':WAVEFORM:FORMAT WORD') # ASCII, BYTE, WORD, BINARY
     dev.write(':WAVEFORM:DATA?')
     data = dev.read()
+    print(data)
     data = data[int(data[1])+2:-1]
     if len(data)%2 != 0:
         raise ValueError('recieved data length not mutiple of 2')
     dev.write(':WAVEFORM:YINCREMENT?')
     inc = float(dev.read()[:-1])
-    print(inc)
     dev.write(':WAVEFORM:YORIGIN?')
     offs = float(dev.read()[:-1])
     values = map(lambda i: ( (ord(i[0])<<8) + ord(i[1]) - ((ord(i[0])&0x80)>>7)*0xffff ) * inc + offs, \
