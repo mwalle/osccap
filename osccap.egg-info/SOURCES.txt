@@ -1,0 +1,16 @@
+README
+osccap_postinstall.py
+setup.py
+osccap/__init__.py
+osccap/agilent.py
+osccap/main.py
+osccap/take_agilent_waveforms.py
+osccap/tektronix.py
+osccap.egg-info/PKG-INFO
+osccap.egg-info/SOURCES.txt
+osccap.egg-info/dependency_links.txt
+osccap.egg-info/top_level.txt
+osccap/data/osccap-16.png
+osccap/data/osccap-64.png
+osccap/data/osccap-busy-16.png
+osccap/data/osccap.ico
