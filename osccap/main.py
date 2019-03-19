@@ -102,6 +102,7 @@ def try_query_value(k, value_name, default):
 class ConfigSettings:
     def __init__(self):
         self.active_scope_id = 0
+        self.active_channel_id = 0
         self.scopes = list()
         self.hotkey = None
 
@@ -156,6 +157,7 @@ class ConfigSettings:
         with reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap') as k:
             self.active_scope_id = try_query_value(k, 'LastActiveScope',
                     self.scopes[0].id)
+        self.active_channel_id = 1
 
     def save_to_win_registry(self):
         # save common program properties
@@ -218,6 +220,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         self.set_icon()
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
         self._create_scope_ids()
+        self._create_channel_ids()
         # just for global hotkey binding
         if on_win and config.hotkey is not None:
             self.frame = wx.Frame(None, -1)
@@ -292,6 +295,17 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             if scope.id == config.active_scope_id:
                 self.active_scope = scope
 
+    def _create_channel_ids(self):
+        self.channels = dict()
+        self.active_channel = None
+        
+        for channel in [ 'ch1', 'ch2', 'ch3', 'ch4' ]:
+            id = wx.NewId()
+            # print(channel)
+            self.channels[id] = channel
+            #if channel.id == config.active_channel_id:
+            #    self.active_channel = channel
+
     def CreatePopupMenu(self):
         menu = wx.Menu()
         item = wx.MenuItem(menu, ID_TO_CLIPBOARD, 'To clipboard')
@@ -299,6 +313,10 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         menu.Append(item)
         item = wx.MenuItem(menu, ID_TO_FILE, 'To file..')
         menu.Bind(wx.EVT_MENU, self.on_to_file, id=item.GetId())
+        menu.Append(item)
+        menu.AppendSeparator()
+        item = wx.MenuItem(menu, ID_WAVEFORM_TO_FILE, 'Waveform to file')
+        menu.Bind(wx.EVT_MENU, self.on_waveform_to_file, id=item.GetId())
         menu.Append(item)
         menu.AppendSeparator()
         if len(self.scopes) == 0:
@@ -313,6 +331,15 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.Bind(wx.EVT_MENU, self.on_host_select, item, id=id)
                 if scope == self.active_scope:
                     menu.Check(id, True)
+        menu.AppendSeparator()
+        channel_menu = wx.Menu()
+        for id, channel in [(1, 'ch1'), (2, 'ch2'), (3, 'ch3'), (4, 'ch4')]:
+        #for id, channel in self.channel.items():
+            item = channel_menu.AppendCheckItem(id, channel)
+            self.Bind(wx.EVT_MENU, self.on_channel_select, item, id=id)
+            if channel == self.active_channel:
+                channel_menu.Check(id, True)
+        menu.AppendMenu(wx.ID_ANY, 'Select Channel', channel_menu)
         menu.AppendSeparator()
         item = wx.MenuItem(menu, wx.ID_ABOUT, 'About..')
         menu.Bind(wx.EVT_MENU, self.on_about, id=item.GetId())
@@ -378,6 +405,14 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         for id, scope in self.scopes.items():
             if id == event_id:
                 self.active_scope = scope
+                break
+
+    def on_channel_select(self, event):
+        event_id = event.GetId()
+        self.active_channel = None
+        for id, channel in [(1, 'ch1'), (2, 'ch2'), (3, 'ch3'), (4, 'ch4')]:
+            if id == event_id:
+                self.active_channel = channel
                 break
 
     def on_left_down(self, event):
