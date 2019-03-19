@@ -22,6 +22,7 @@ import io
 from collections import namedtuple
 from configparser import SafeConfigParser
 import configparser
+import csv
 
 import wx
 from wx import adv
@@ -91,6 +92,15 @@ def save_screenshot_to_file(host, filename, screenshot_func):
     screen = screenshot_func(host)
     f = open(filename, 'wb')
     f.write(screen)
+    f.close()
+
+def save_waveform_to_file(host, filename, waveform_func):
+    waveform = waveform_func(host, self.channel)
+    f = open(filename, 'wb')
+    wr = csv.writer(f)
+    values = zip(values)
+    for value in values:
+        wr.writerow(value)
     f.close()
 
 def try_query_value(k, value_name, default):
@@ -387,6 +397,25 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             finally:
                 self.busy = False
                 self.set_icon()
+    
+    def save_waveform_to_file(self, filename):
+        if self.active_scope:
+            if self.active_scope.type == OSC_TYPE_TEKTRONIX_TDS:
+                print("currently not possible")
+                return
+            elif self.active_scope.type == OSC_TYPE_AGILENT:
+                func = agilent.take_waveform_word
+            else:
+                return
+            try:
+                self.busy = True
+                self.set_icon()
+                save_waveform_to_file(self.active_scope.host, filename, func)
+            except:
+                pass
+            finally:
+                self.busy = False
+                self.set_icon()
 
     def on_to_clipboard(self, event):
         self.copy_screenshot_to_clipboard()
@@ -400,7 +429,12 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         d.Destroy()
     
     def on_waveform_to_file(self, event):
-
+        d = wx.FileDialog(None, "Save to", wildcard="*.csv",
+                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        if d.ShowModal() == wx.ID_OK:
+            filename = os.path.join(d.GetDirectory(), d.GetFilename())
+            self.save_waveform_to_file(filename)
+        d.Destroy()
 
     def on_host_select(self, event):
         event_id = event.GetId()
