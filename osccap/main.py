@@ -94,14 +94,12 @@ def save_screenshot_to_file(host, filename, screenshot_func):
     f.write(screen)
     f.close()
 
-def save_waveform_to_file(host, filename, waveform_func):
-    print("begin func")
-    print(self.active_channel) #FIXME active channel not set correctly
-    waveform = waveform_func(host, self.active_channel.channel)
+def save_waveform_to_file(host, channel, filename, waveform_func):
+    waveform = waveform_func(host, channel) #FIXME current fuckup
     f = open(filename, 'wb')
     print("starting write")
     wr = csv.writer(f)
-    values = zip(values)
+    values = zip(waveform)
     for value in values:
         wr.writerow(value)
     f.close()
@@ -115,7 +113,6 @@ def try_query_value(k, value_name, default):
 class ConfigSettings:
     def __init__(self):
         self.active_scope_id = 0
-        self.active_channel_id = 0
         self.scopes = list()
         self.hotkey = None
 
@@ -170,11 +167,10 @@ class ConfigSettings:
         with reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap') as k:
             self.active_scope_id = try_query_value(k, 'LastActiveScope',
                     self.scopes[0].id)
-        self.active_channel_id = 1
 
     def save_to_win_registry(self):
         # save common program properties
-        k = reg.OpenKey(reg.HKEY_CUR    print(inc)RENT_USER, 'SOFTWARE\OscCap',
+        k = reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap',
                 0, reg.KEY_WRITE)
         reg.SetValueEx(k, 'LastActiveScope', None, reg.REG_DWORD,
                 self.active_scope_id)
@@ -312,13 +308,11 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def _create_channel_ids(self):
         self.channels = dict()
         self.active_channel = None
-        for channel in [ 'ch1', 'ch2', 'ch3', 'ch4' ]:
+        for channel in [ 'ch1', 'ch2', 'ch3', 'ch4' ]: #TODO maybe add in loading a channel list from config
             id = wx.NewIdRef(count=1)
-            # print(channel)
             self.channels[id] = channel
-        self.active_channel = channels[1] #maybe select a different channel as default? since we dont have a config I think the first is agood though
-           # if channel.id == config.active_channel_id:
-            #    self.active_channel = channel
+            if self.active_channel == None:
+                self.active_channel = self.channels[id]
 
     def CreatePopupMenu(self):
         menu = wx.Menu()
@@ -414,7 +408,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             try:
                 self.busy = True
                 self.set_icon()
-                save_waveform_to_file(self.active_scope.host, filename, func)
+                save_waveform_to_file(self.active_scope.host, self.active_channel, filename, func)
             except:
                 self.ShowBallon("Error", "There was an error while capturing "
                         "the waveform!", flags=wx.ICON_ERROR);

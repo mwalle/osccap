@@ -37,7 +37,7 @@ def take_screenshot_png(host, fullscreen=True):
     dev.close()
     return img_data
 
-def take_waveform_word(host, filename, channel):
+def take_waveform_word(host, channel):
     print("begin")
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
