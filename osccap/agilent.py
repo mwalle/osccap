@@ -38,12 +38,14 @@ def take_screenshot_png(host, fullscreen=True):
     return img_data
 
 def take_waveform_word(host, filename, channel):
+    print("begin")
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.write(':WAVEFORM:SOURCE ' + channel)
     dev.write(':WAVEFORM:FORMAT WORD') # ASCII, BYTE, WORD, BINARY
     dev.write(':WAVEFORM:DATA?')
     data = dev.read()
+    print(data)
     data = data[int(data[1])+2:-1]
     if len(data)%2 != 0:
         raise ValueError('recieved data length not mutiple of 2')

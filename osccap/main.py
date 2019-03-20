@@ -95,7 +95,9 @@ def save_screenshot_to_file(host, filename, screenshot_func):
     f.close()
 
 def save_waveform_to_file(host, filename, waveform_func):
-    waveform = waveform_func(host, self.channel)
+    print("begin func")
+    print(self.active_channel) #FIXME active channel not set correctly
+    waveform = waveform_func(host, self.active_channel.channel)
     f = open(filename, 'wb')
     print("starting write")
     wr = csv.writer(f)
