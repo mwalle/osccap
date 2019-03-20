@@ -172,7 +172,7 @@ class ConfigSettings:
 
     def save_to_win_registry(self):
         # save common program properties
-        k = reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap',
+        k = reg.OpenKey(reg.HKEY_CUR    print(inc)RENT_USER, 'SOFTWARE\OscCap',
                 0, reg.KEY_WRITE)
         reg.SetValueEx(k, 'LastActiveScope', None, reg.REG_DWORD,
                 self.active_scope_id)
@@ -314,6 +314,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             id = wx.NewIdRef(count=1)
             # print(channel)
             self.channels[id] = channel
+        self.active_channel = channels[1] #maybe select a different channel as default? since we dont have a config I think the first is agood though
            # if channel.id == config.active_channel_id:
             #    self.active_channel = channel
 
@@ -453,6 +454,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         for id, channel in self.channels.items():
             if id == event_id:
                 self.active_channel = channel
+                print(self.active_channel)
                 break
 
     def on_left_down(self, event):

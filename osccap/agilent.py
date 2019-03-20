@@ -49,7 +49,6 @@ def take_waveform_word(host, filename, channel):
         raise ValueError('recieved data length not mutiple of 2')
     dev.write(':WAVEFORM:YINCREMENT?')
     inc = float(dev.read()[:-1])
-    print(inc)
     dev.write(':WAVEFORM:YORIGIN?')
     offs = float(dev.read()[:-1])
     values = map(lambda i: ( (ord(i[0])<<8) + ord(i[1]) - ((ord(i[0])&0x80)>>7)*0xffff ) * inc + offs, \
