@@ -312,7 +312,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def _create_channel_ids(self):
         self.channels = dict()
         self.active_channel = None
-        for channel in [ 'ch1', 'ch2', 'ch3', 'ch4' ]: #TODO maybe add in loading a channel list from config
+        for channel in [ 'CHAN1', 'CHAN2', 'CHAN3', 'CHAN4' ]: #TODO maybe add in loading a channel list from config
             id = wx.NewIdRef(count=1)
             self.channels[id] = channel
             if self.active_channel == None:

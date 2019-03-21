@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import time
-import vxi11
+import pyvxi11
 import datetime
 import csv
 
