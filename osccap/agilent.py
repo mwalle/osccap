@@ -38,23 +38,24 @@ def take_screenshot_png(host, fullscreen=True):
     return img_data
 
 def take_waveform_word(host, channel):
-    print("begin")
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.write(':WAVEFORM:SOURCE ' + channel)
     dev.write(':WAVEFORM:FORMAT WORD') # ASCII, BYTE, WORD, BINARY
     dev.write(':WAVEFORM:DATA?')
-    data = dev.read()
-    print(data)
+    data = dev.read_raw()
     data = data[int(data[1])+2:-1]
     if len(data)%2 != 0:
-        raise ValueError('recieved data length not mutiple of 2')
+        raise ValueError('received data length not mutiple of 2')
     dev.write(':WAVEFORM:YINCREMENT?')
     inc = float(dev.read()[:-1])
     dev.write(':WAVEFORM:YORIGIN?')
     offs = float(dev.read()[:-1])
-    values = map(lambda i: ( (ord(i[0])<<8) + ord(i[1]) - ((ord(i[0])&0x80)>>7)*0xffff ) * inc + offs, \
-            chunks(data,2))
+    """"convert data to 2 8 bit chunks, take HO bits, shift left, add LO bits, 
+    subtract rightmost HO bit multiplied by #FFFF for signage, multiply with increment and add offset"""
+    values = [(((i[0]<<8 + i[1]) - ((i[0]>>7)*0xffff)) * inc + offs) for i in chunks(data,2)] #Python 3
+    #values = map(lambda i: ( (ord(i[0])<<8) + ord(i[1]) - ((ord(i[0])&0x80)>>7)*0xffff ) * inc + offs, \
+    #       chunks(data,2)) #Python 2
     dev.close()
     return values
 

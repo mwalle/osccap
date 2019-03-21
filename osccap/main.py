@@ -97,11 +97,15 @@ def save_screenshot_to_file(host, filename, screenshot_func):
 def save_waveform_to_file(host, channel, filename, waveform_func):
     waveform = waveform_func(host, channel) #FIXME current fuckup
     f = open(filename, 'wb')
-    print("starting write")
-    wr = csv.writer(f)
-    values = zip(waveform)
-    for value in values:
-        wr.writerow(value)
+    try:
+        wr = csv.writer(f)
+        values = zip(waveform)
+        for value in values:
+            wr.writerow(value)
+        pass
+    except Exception as e:
+        print(str(e))
+        pass
     f.close()
 
 def try_query_value(k, value_name, default):
@@ -399,7 +403,8 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def save_waveform_to_file(self, filename):
         if self.active_scope:
             if self.active_scope.type == OSC_TYPE_TEKTRONIX_TDS:
-                print("currently not possible")
+                self.ShowBallon("Error", "Waveform capturing is currently not possible with "
+                        "this device!", flags=wx.ICON_ERROR);
                 return
             elif self.active_scope.type == OSC_TYPE_AGILENT:
                 func = agilent.take_waveform_word
@@ -450,7 +455,6 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         for id, channel in self.channels.items():
             if id == event_id:
                 self.active_channel = channel
-                print(self.active_channel)
                 break
 
     def on_left_down(self, event):
