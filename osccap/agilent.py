@@ -53,8 +53,7 @@ def take_waveform_word(host, channel):
     offs = float(dev.read()[:-1])
     """"convert data to 2 8 bit chunks, take HO bits, shift left, add LO bits, 
     subtract rightmost HO bit multiplied by #FFFF for signage, multiply with increment and add offset"""
-    values = [(((i[0]<<8 + i[1]) - ((i[0]>>7)*0xffff)) * inc + offs) for i in chunks(data,2)] #Python 3
-    print(values)
+    values = [(((i[0]<<8 + i[1]) - ((i[0]>>7)*0xffff)) * inc + offs) for i in chunks(data,2)] #Python 3 FIXME test formula for correctness
     #values = map(lambda i: ( (ord(i[0])<<8) + ord(i[1]) - ((ord(i[0])&0x80)>>7)*0xffff ) * inc + offs, \
     #       chunks(data,2)) #Python 2
     dev.close()

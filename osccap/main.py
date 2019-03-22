@@ -95,17 +95,12 @@ def save_screenshot_to_file(host, filename, screenshot_func):
     f.close()
 
 def save_waveform_to_file(host, channel, filename, waveform_func):
-    waveform = waveform_func(host, channel) #FIXME current fuckup
-    f = open(filename, 'wb')
-    try:
-        wr = csv.writer(f)
-        values = zip(waveform)
-        for value in values:
-            wr.writerow(value)
-        pass
-    except Exception as e:
-        print(str(e))
-        pass
+    waveform = waveform_func(host, channel)
+    f = open(filename, 'w')
+    wr = csv.writer(f)
+    values = zip(waveform)
+    for value in values:
+        wr.writerow(value)
     f.close()
 
 def try_query_value(k, value_name, default):
