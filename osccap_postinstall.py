@@ -10,7 +10,7 @@ def install():
         # otherwise, continue with user folder
         folder = get_special_folder_path('CSIDL_PROGRAMS')
 
-    print "Creating shortcut..",
+    print ("Creating shortcut..")
     dst = os.path.join(folder, 'osccap.lnk')
     icon = os.path.join(os.path.dirname(osccap.__file__), 'data', 'osccap.ico')
     create_shortcut(
@@ -22,7 +22,7 @@ def install():
             icon,
     )
     file_created(dst)
-    print "done"
+    print ("done")
 
 
 if __name__ == '__main__':
