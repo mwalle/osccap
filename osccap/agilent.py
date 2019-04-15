@@ -15,9 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import time
 import vxi11
-import datetime
 
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""

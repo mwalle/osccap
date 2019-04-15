@@ -15,29 +15,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import csv
+import io
 import logging
 import os
 import os.path
-import io
-from collections import namedtuple
-from configparser import SafeConfigParser
-import configparser
-import csv
-
 import wx
-from wx import adv
+import wx.adv
 
-import sys
-if sys.platform.startswith('win'):
-    import winreg as reg
-    import win32con
-    import win32gui
-    on_win = True
-else:
-    on_win = False
+from collections import namedtuple
 
 from . import tektronix
 from . import agilent
+
+
+import sys
+if sys.platform.startswith('win'):
+    import winreg
+    import win32gui
+    on_win = True
+else:
+    from configparser import SafeConfigParser
+    import configparser
+    on_win = False
+
 
 __version__ = '0.3'
 
