@@ -74,6 +74,7 @@ TRAY_ICON = os.path.join(DATA_PATH, 'osccap-16.png')
 TRAY_ICON_BUSY = os.path.join(DATA_PATH, 'osccap-busy-16.png')
 TRAY_TOOLTIP = 'OscCap v%s' % __version__
 
+
 def copy_screenshot_to_clipboard(host, screenshot_func):
     wx.InitAllImageHandlers()
     screen = screenshot_func(host)
@@ -91,6 +92,7 @@ def save_screenshot_to_file(host, filename, screenshot_func):
     f.write(screen)
     f.close()
 
+
 def save_waveform_to_file(host, channel, filename, waveform_func):
     waveform = waveform_func(host, channel)
     f = open(filename, 'w')
@@ -100,6 +102,7 @@ def save_waveform_to_file(host, channel, filename, waveform_func):
         wr.writerow(value)
     f.close()
 
+
 # There is only one configuration, create it
 config = ConfigSettings()
 
@@ -107,6 +110,7 @@ ID_HOTKEY = wx.NewIdRef(count=1)
 ID_TO_CLIPBOARD = wx.NewIdRef(count=1)
 ID_TO_FILE = wx.NewIdRef(count=1)
 ID_WAVEFORM_TO_FILE = wx.NewIdRef(count=1)
+
 
 class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def __init__(self):
@@ -120,7 +124,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         if on_win and config.hotkey is not None:
             self.frame = wx.Frame(None, -1)
             self.frame.RegisterHotKey(ID_HOTKEY, config.hotkey.modifiers,
-                    config.hotkey.keycode)
+                                      config.hotkey.keycode)
             self.frame.Bind(wx.EVT_HOTKEY, self.on_to_clipboard, id=ID_HOTKEY)
         else:
             self.frame = None
@@ -129,7 +133,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def ShowBallon(self, title, text, msec=0, flags=0):
         if on_win and self.IsIconInstalled():
             self._SetBallonTip(self.icon.GetHandle(), title, text, msec,
-                    flags)
+                               flags)
 
     def _SetBallonTip(self, hicon, title, msg, msec, flags):
         infoFlags = 0
@@ -156,7 +160,9 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def _GetIconHandle(self):
         """
         Find the icon window.
-        This is ugly but for now there is no way to find this window directly from wx
+
+        This is ugly but for now there is no way to find this window
+        directly from wx.
         """
         if not hasattr(self, "_chwnd"):
             try:
@@ -176,9 +182,9 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def set_icon(self):
         self.icon = wx.Icon()
         if not self.busy:
-             wx.Icon.CopyFromBitmap(self.icon, wx.Bitmap(TRAY_ICON))
+            wx.Icon.CopyFromBitmap(self.icon, wx.Bitmap(TRAY_ICON))
         else:
-             wx.Icon.CopyFromBitmap(self.icon, wx.Bitmap(TRAY_ICON_BUSY))
+            wx.Icon.CopyFromBitmap(self.icon, wx.Bitmap(TRAY_ICON_BUSY))
         self.SetIcon(self.icon, TRAY_TOOLTIP)
 
     def _create_scope_ids(self):
@@ -193,10 +199,12 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def _create_channel_ids(self):
         self.channels = dict()
         self.active_channel = None
-        for channel in [ 'CHAN1', 'CHAN2', 'CHAN3', 'CHAN4' ]: #TODO maybe add in loading a channel list from config
+
+        # TODO maybe add in loading a channel
+        for channel in ['CHAN1', 'CHAN2', 'CHAN3', 'CHAN4']:
             id = wx.NewIdRef(count=1)
             self.channels[id] = channel
-            if self.active_channel == None:
+            if self.active_channel is None:
                 self.active_channel = self.channels[id]
 
     def CreatePopupMenu(self):
@@ -257,7 +265,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 copy_screenshot_to_clipboard(self.active_scope.host, func)
             except:
                 self.ShowBallon("Error", "There was an error while capturing "
-                        "the screenshot!", flags=wx.ICON_ERROR);
+                                "the screenshot!", flags=wx.ICON_ERROR)
                 pass
             finally:
                 self.busy = False
@@ -280,12 +288,13 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             finally:
                 self.busy = False
                 self.set_icon()
-    
+
     def save_waveform_to_file(self, filename):
         if self.active_scope:
             if self.active_scope.type == OSC_TYPE_TEKTRONIX_TDS:
-                self.ShowBallon("Error", "Waveform capturing is currently not possible with "
-                        "this device!", flags=wx.ICON_ERROR);
+                self.ShowBallon("Error", "Waveform capturing is currently "
+                                "not possible with this device!",
+                                flags=wx.ICON_ERROR)
                 return
             elif self.active_scope.type == OSC_TYPE_AGILENT:
                 func = agilent.take_waveform_word
@@ -294,10 +303,11 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             try:
                 self.busy = True
                 self.set_icon()
-                save_waveform_to_file(self.active_scope.host, self.active_channel, filename, func)
+                save_waveform_to_file(self.active_scope.host,
+                                      self.active_channel, filename, func)
             except:
                 self.ShowBallon("Error", "There was an error while capturing "
-                        "the waveform!", flags=wx.ICON_ERROR);
+                                "the waveform!", flags=wx.ICON_ERROR)
                 pass
             finally:
                 self.busy = False
@@ -308,15 +318,15 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
     def on_to_file(self, event):
         d = wx.FileDialog(None, "Save to", wildcard="*.png",
-                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         if d.ShowModal() == wx.ID_OK:
             filename = os.path.join(d.GetDirectory(), d.GetFilename())
             self.save_screenshot_to_file(filename)
         d.Destroy()
-    
+
     def on_waveform_to_file(self, event):
         d = wx.FileDialog(None, "Save to", wildcard="*.csv",
-                style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         if d.ShowModal() == wx.ID_OK:
             filename = os.path.join(d.GetDirectory(), d.GetFilename())
             self.save_waveform_to_file(filename)
