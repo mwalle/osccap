@@ -19,13 +19,30 @@ import logging
 import time
 import vxi11
 
+
+def _get_idn(dev):
+    """This query might return :TEKTRONIX,TDS5104,CF:91.1CT
+    FV:01.00.912, indicating the instrument model number,
+    configured number, and firmware version number.
+    """
+    dev.write('*IDN?')
+    idn = dev.read()
+    logging.info('Tektronix IDN: {}'.format(idn))
+    return idn.split(',')
+
+
 def take_screenshot_png(host, fullscreen=True):
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.io_timeout = 10
-    dev.write('*IDN?')
-    scope_idn = dev.read()
-    if scope_idn.split(',')[0:2] == ['TEKTRONIX', 'TDS5104']:
+
+    (manufacturer, model) = _get_idn(dev)[0:2]
+
+    if manufacturer != 'TEKTRONIX':
+        logging.info('Scope is not a tektronix {}'.format())
+        return None
+
+    if model == 'TDS5104':
         dev.write(r'EXPORT:FILENAME "C:\TEMP\SCREEN.PNG"')
         dev.write('EXPORT:FORMAT PNG')
         dev.write('EXPORT:IMAGE NORMAL')
@@ -39,7 +56,7 @@ def take_screenshot_png(host, fullscreen=True):
         time.sleep(3)
         dev.write(r'FILESYSTEM:PRINT "C:\TEMP\SCREEN.PNG", GPIB')
         time.sleep(0.5)
-    elif scope_idn.split(',')[0:2] == ['TEKTRONIX', 'TDS7704']:
+    elif model == 'TDS7704':
         dev.write(r'EXPORT:FILENAME "C:\TEMP\SCREEN.PNG"')
         dev.write('EXPORT:FORMAT PNG')
         dev.write('EXPORT:IMAGE NORMAL')
@@ -53,7 +70,7 @@ def take_screenshot_png(host, fullscreen=True):
         time.sleep(3)
         dev.write(r'FILESYSTEM:PRINT "C:\TEMP\SCREEN.PNG", GPIB')
         time.sleep(0.5)
-    elif scope_idn.split(',')[0:2] == ['TEKTRONIX', 'MSO64']:
+    elif model == 'MSO64':
         dev.write(r'SAVE:IMAGE "screen.png"')
         save_time = 0
         dev.write('*OPC?')
