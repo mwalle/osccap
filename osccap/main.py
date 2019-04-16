@@ -88,19 +88,20 @@ def copy_screenshot_to_clipboard(host, screenshot_func):
 
 def save_screenshot_to_file(host, filename, screenshot_func):
     screen = screenshot_func(host)
-    f = open(filename, 'wb')
-    f.write(screen)
-    f.close()
+
+    print(screen)
+    with open(filename, 'wb') as f:
+        f.write(screen)
 
 
 def save_waveform_to_file(host, channel, filename, waveform_func):
     waveform = waveform_func(host, channel)
-    f = open(filename, 'w')
-    wr = csv.writer(f)
-    values = zip(waveform)
-    for value in values:
-        wr.writerow(value)
-    f.close()
+
+    with open(filename, 'w') as f:
+        writer = csv.writer(f)
+        values = zip(waveform)
+        for value in values:
+            writer.writerow(value)
 
 
 # There is only one configuration, create it
