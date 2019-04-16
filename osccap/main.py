@@ -19,24 +19,22 @@ import csv
 import io
 import logging
 import os
-import os.path
+import sys
 import wx
 import wx.adv
 
-from collections import namedtuple
+
+from osccap.config import ConfigSettings
 
 from . import tektronix
 from . import agilent
 
 
-import sys
 if sys.platform.startswith('win'):
     import winreg
     import win32gui
     on_win = True
 else:
-    from configparser import SafeConfigParser
-    import configparser
     on_win = False
 
 
@@ -60,8 +58,6 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA"""
 
-OscProperties = namedtuple('OscProperties', 'id name host type')
-HotKey = namedtuple('HotKey', 'modifiers keycode')
 log = logging.getLogger(__name__)
 
 OSC_TYPE_TEKTRONIX_TDS = 0
@@ -103,117 +99,6 @@ def save_waveform_to_file(host, channel, filename, waveform_func):
     for value in values:
         wr.writerow(value)
     f.close()
-
-def try_query_value(k, value_name, default):
-    try:
-        return reg.QueryValueEx(k, value_name)[0]
-    except WindowsError:
-        return default
-
-class ConfigSettings:
-    def __init__(self):
-        self.active_scope_id = 0
-        self.scopes = list()
-        self.hotkey = None
-
-    def load(self):
-        if on_win:
-            config.load_from_win_registry()
-        else:
-            config.load_from_dot_config()
-
-    def save(self):
-        if on_win:
-            config.save_to_win_registry()
-        else:
-            config.save_to_dot_config()
-
-    def load_from_win_registry(self):
-        # load scope definitions
-        try:
-            k = reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap\Scopes')
-        except WindowsError:
-            k = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, 'SOFTWARE\OscCap\Scopes')
-        i = 0
-        try:
-            while True:
-                name = reg.EnumKey(k, i)
-                try:
-                    s = reg.OpenKey(k, name)
-                    id = reg.QueryValueEx(s, 'id')[0]
-                    host = reg.QueryValueEx(s, 'host')[0]
-                    type = reg.QueryValueEx(s, 'type')[0]
-                    self.scopes.append(OscProperties(id, name, host, type))
-                except WindowsError:
-                    log.error('Could not load oscilloscope %s', name)
-                i += 1
-        except WindowsError:
-            pass
-        reg.CloseKey(k)
-        self.scopes.sort(key=lambda e: e.id)
-        
-        # load common program properties
-        try:
-            k = reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap')
-        except WindowsError:
-            reg.CreateKeyEx(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap')
-            k = reg.OpenKey(reg.HKEY_LOCAL_MACHINE, 'SOFTWARE\OscCap')
-        hk_modifiers = try_query_value(k, 'HotKeyModifiers', None)
-        hk_keycode = try_query_value(k, 'HotKeyKeycode', None)
-        if (hk_modifiers, hk_keycode) != (None, None):
-            self.hotkey = HotKey(hk_modifiers, hk_keycode)
-        reg.CloseKey(k)
-        # load local user properties
-        with reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap') as k:
-            self.active_scope_id = try_query_value(k, 'LastActiveScope',
-                    self.scopes[0].id)
-
-    def save_to_win_registry(self):
-        # save common program properties
-        k = reg.OpenKey(reg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap',
-                0, reg.KEY_WRITE)
-        reg.SetValueEx(k, 'LastActiveScope', None, reg.REG_DWORD,
-                self.active_scope_id)
-        reg.CloseKey(k)
-
-    def load_from_dot_config(self):
-        filename = os.path.expanduser('~/.osccaprc')
-        parser = SafeConfigParser()
-        try:
-            parser.readfp(open(filename, 'r'))
-        except IOError:
-            return
-        try:
-            self.active_scope_id = parser.getint('global', 'last_active_scope')
-        except configparser.NoSectionError:
-            pass
-        except configparser.NoOptionError:
-            pass
-        for s in parser.sections():
-            if s.startswith('scope'):
-                try:
-                    id = parser.getint(s, 'id')
-                    name = parser.get(s, 'name')
-                    host = parser.get(s, 'host')
-                    type = parser.getint(s, 'type')
-                    self.scopes.append(OscProperties(id, name, host, type))
-                except configparser.NoOptionError:
-                    pass
-        self.scopes.sort(key=lambda e: e.id)
-
-    def save_to_dot_config(self):
-        filename = os.path.expanduser('~/.osccaprc')
-        parser = SafeConfigParser()
-        fd = open(filename, 'r')
-        parser.readfp(fd)
-        try:
-            parser.add_section('global')
-        except configparser.DuplicateSectionError:
-            pass
-        parser.set('global', 'last_active_scope', str(self.active_scope_id))
-        fd = open(filename + '~', 'w')
-        parser.write(fd)
-        os.rename(filename + '~', filename)
 
 # There is only one configuration, create it
 config = ConfigSettings()
@@ -478,11 +363,13 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
         wx.adv.AboutBox(info)
 
+
 def main():
     config.load()
     app = wx.App(False)
     OscCapTaskBarIcon()
     app.MainLoop()
+
 
 if __name__ == '__main__':
     main()
