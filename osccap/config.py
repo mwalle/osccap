@@ -7,8 +7,6 @@ import sys
 from collections import namedtuple
 
 
-LOGGER = logging.getLogger(__name__)
-
 
 on_win = None
 
@@ -70,7 +68,7 @@ class ConfigSettings(object):
                     self.scopes.append(OscProperties(scope_id, name,
                                                      scope_host, scope_type))
                 except WindowsError:
-                    LOGGER.error('Error loading config oscilloscope %s', name)
+                    logging.error('Error loading config oscilloscope %s', name)
                 index += 1
         except WindowsError:
             pass

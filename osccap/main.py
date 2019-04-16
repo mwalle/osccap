@@ -58,7 +58,6 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA"""
 
-log = logging.getLogger(__name__)
 
 OSC_TYPE_TEKTRONIX_TDS = 0
 OSC_TYPE_AGILENT = 1
@@ -264,9 +263,12 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.busy = True
                 self.set_icon()
                 copy_screenshot_to_clipboard(self.active_scope.host, func)
-            except:
+            except Exception as exp:
+                print(exp)
                 self.ShowBallon("Error", "There was an error while capturing "
                                 "the screenshot!", flags=wx.ICON_ERROR)
+                logging.error('cannot take screenshot from {}'
+                              .format(self.active_scope.name))
                 pass
             finally:
                 self.busy = False
@@ -279,12 +281,17 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             elif self.active_scope.type == OSC_TYPE_AGILENT:
                 func = agilent.take_screenshot_png
             else:
+                logging.warning('unsupported scope type {}'
+                                .format(self.active_scope.type))
                 return
+
             try:
                 self.busy = True
                 self.set_icon()
                 save_screenshot_to_file(self.active_scope.host, filename, func)
-            except:
+            except Exception as exp:
+                logging.error('cannot take screenshot from {}'
+                              .format(self.active_scope.name))
                 pass
             finally:
                 self.busy = False
@@ -376,6 +383,9 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
 
 def main():
+    logging.basicConfig(format='%(levelname)s: %(message)s',
+                        level=logging.INFO)
+
     config.load()
     app = wx.App(False)
     OscCapTaskBarIcon()
