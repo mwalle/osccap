@@ -88,7 +88,6 @@ def copy_screenshot_to_clipboard(host, screenshot_func):
 def save_screenshot_to_file(host, filename, screenshot_func):
     screen = screenshot_func(host)
 
-    print(screen)
     with open(filename, 'wb') as f:
         f.write(screen)
 
