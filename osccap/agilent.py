@@ -23,9 +23,10 @@ def chunks(l, n):
         yield l[i:i + n]
 
 def binary_block(data):
-    len_digits = int(data[1])
-    block_len = int(data[2:2+len_digits])
-    return data[2+len_digits:]
+    len_digits = int(chr(data[1]))
+#    block_len = int(data[2:2+len_digits])
+    return data[2+len_digits:-1]
+
 
 def take_screenshot_png(host, fullscreen=True):
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
