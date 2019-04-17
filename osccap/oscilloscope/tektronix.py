@@ -41,11 +41,7 @@ def take_screenshot(host, fullscreen=True, image_format='png'):
     dev.open()
     dev.io_timeout = 10
 
-    (manufacturer, model) = _get_idn(dev)[0:2]
-
-    if manufacturer != 'TEKTRONIX':
-        logging.info('Scope is not a tektronix {}'.format())
-        return None
+    model = _get_idn(dev)[1]
 
     if model == 'TDS5104':
         dev.write(r'EXPORT:FILENAME "C:\TEMP\SCREEN.PNG"')

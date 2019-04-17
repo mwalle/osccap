@@ -31,6 +31,7 @@ def binary_block(data):
 
 
 def take_screenshot(host, fullscreen=True, image_format='png'):
+    logging.debug('agilent: take_screenshot')
 
     if image_format.lower() != 'png':
         logging.warning('currently only png format supported')
@@ -51,6 +52,8 @@ def take_screenshot(host, fullscreen=True, image_format='png'):
 
 
 def take_waveform(host, channel):
+    logging.debug('agilent: take_waveform')
+
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.write(':WAVEFORM:SOURCE ' + channel)

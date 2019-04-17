@@ -25,7 +25,7 @@ import wx.adv
 
 
 from osccap.config import ConfigSettings
-from osccap.oscilloscope import (agilent, tektronix)
+from osccap.oscilloscope import create_oscilloscopes_from_config
 
 
 if sys.platform.startswith('win'):
@@ -57,9 +57,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA"""
 
 
-OSC_TYPE_TEKTRONIX_TDS = 0
-OSC_TYPE_AGILENT = 1
-
 try:
     from pkg_resources import resource_filename
     DATA_PATH = resource_filename(__name__, 'data')
@@ -72,9 +69,9 @@ TRAY_ICON_BUSY = os.path.join(DATA_PATH, 'osccap-busy-16.png')
 TRAY_TOOLTIP = 'OscCap v%s' % __version__
 
 
-def copy_screenshot_to_clipboard(host, screenshot_func):
+def copy_screenshot_to_clipboard(scope):
     wx.InitAllImageHandlers()
-    screen = screenshot_func(host)
+    screen = scope.take_screenshot()
     stream = io.BytesIO(screen)
     bmp = wx.Bitmap(wx.Image(stream))
     cbbmp = wx.BitmapDataObject(bmp)
@@ -83,15 +80,15 @@ def copy_screenshot_to_clipboard(host, screenshot_func):
         wx.TheClipboard.Close()
 
 
-def save_screenshot_to_file(host, filename, screenshot_func):
-    screen = screenshot_func(host)
+def save_screenshot_to_file(scope, filename):
+    screen = scope.take_screenshot()
 
     with open(filename, 'wb') as f:
         f.write(screen)
 
 
-def save_waveform_to_file(host, channel, filename, waveform_func):
-    waveform = waveform_func(host, channel)
+def save_waveform_to_file(scope, channel, filename):
+    waveform = scope.take_waveform(channel)
 
     with open(filename, 'w') as f:
         writer = csv.writer(f)
@@ -110,13 +107,20 @@ ID_WAVEFORM_TO_FILE = wx.NewIdRef(count=1)
 
 
 class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
-    def __init__(self):
+    scopes = dict()
+    active_scope = None
+    channels = dict()
+    active_channel = None
+
+    def __init__(self, oscilloscopes):
         wx.adv.TaskBarIcon.__init__(self)
         self.busy = False
         self.set_icon()
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
-        self._create_scope_ids()
+
+        self._create_scope_ids(oscilloscopes)
         self._create_channel_ids()
+
         # just for global hotkey binding
         if on_win and config.hotkey is not None:
             self.frame = wx.Frame(None, -1)
@@ -184,19 +188,14 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             wx.Icon.CopyFromBitmap(self.icon, wx.Bitmap(TRAY_ICON_BUSY))
         self.SetIcon(self.icon, TRAY_TOOLTIP)
 
-    def _create_scope_ids(self):
-        self.scopes = dict()
-        self.active_scope = None
-        for scope in config.scopes:
+    def _create_scope_ids(self, oscilloscopes):
+        for scope in oscilloscopes:
             id = wx.NewIdRef(count=1)
             self.scopes[id] = scope
             if scope.host == config.active_scope_host:
                 self.active_scope = scope
 
     def _create_channel_ids(self):
-        self.channels = dict()
-        self.active_channel = None
-
         # TODO maybe add in loading a channel
         for channel in ['CHAN1', 'CHAN2', 'CHAN3', 'CHAN4']:
             id = wx.NewIdRef(count=1)
@@ -250,16 +249,10 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
     def copy_screenshot_to_clipboard(self):
         if self.active_scope:
-            if self.active_scope.type == OSC_TYPE_TEKTRONIX_TDS:
-                func = tektronix.take_screenshot
-            elif self.active_scope.type == OSC_TYPE_AGILENT:
-                func = agilent.take_screenshot
-            else:
-                return
             try:
                 self.busy = True
                 self.set_icon()
-                copy_screenshot_to_clipboard(self.active_scope.host, func)
+                copy_screenshot_to_clipboard(self.active_scope)
             except Exception as exp:
                 print(exp)
                 self.ShowBallon("Error", "There was an error while capturing "
@@ -273,19 +266,10 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
     def save_screenshot_to_file(self, filename):
         if self.active_scope:
-            if self.active_scope.type == OSC_TYPE_TEKTRONIX_TDS:
-                func = tektronix.take_screenshot
-            elif self.active_scope.type == OSC_TYPE_AGILENT:
-                func = agilent.take_screenshot
-            else:
-                logging.warning('unsupported scope type {}'
-                                .format(self.active_scope.type))
-                return
-
             try:
                 self.busy = True
                 self.set_icon()
-                save_screenshot_to_file(self.active_scope.host, filename, func)
+                save_screenshot_to_file(self.active_scope, filename)
             except Exception as exp:
                 logging.error('cannot take screenshot from {}'
                               .format(self.active_scope.name))
@@ -296,20 +280,11 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
     def save_waveform_to_file(self, filename):
         if self.active_scope:
-            if self.active_scope.type == OSC_TYPE_TEKTRONIX_TDS:
-                self.ShowBallon("Error", "Waveform capturing is currently "
-                                "not possible with this device!",
-                                flags=wx.ICON_ERROR)
-                return
-            elif self.active_scope.type == OSC_TYPE_AGILENT:
-                func = agilent.take_waveform
-            else:
-                return
             try:
                 self.busy = True
                 self.set_icon()
-                save_waveform_to_file(self.active_scope.host,
-                                      self.active_channel, filename, func)
+                save_waveform_to_file(self.active_scope, self.active_channel,
+                                      filename)
             except:
                 self.ShowBallon("Error", "There was an error while capturing "
                                 "the waveform!", flags=wx.ICON_ERROR)
@@ -384,8 +359,9 @@ def main():
                         level=logging.INFO)
 
     config.load()
+    oscilloscopes = create_oscilloscopes_from_config(config)
     app = wx.App(False)
-    OscCapTaskBarIcon()
+    OscCapTaskBarIcon(oscilloscopes)
     app.MainLoop()
 
 

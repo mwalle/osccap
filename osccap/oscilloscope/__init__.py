@@ -1,0 +1,76 @@
+import logging
+import vxi11
+
+from osccap.oscilloscope import (agilent, tektronix)
+
+
+def create_oscilloscopes_from_config(config):
+    oscs = list()
+    for scope in config.scopes:
+        osc = Oscilloscope(scope.host, scope.name)
+        oscs.append(osc)
+
+    return oscs
+
+
+class Oscilloscope(object):
+    host = None
+    name = None
+    type = None
+
+    manufacturer = None
+    model = None
+
+    OSC_TYPE_TEKTRONIX_TDS = 0
+    OSC_TYPE_AGILENT = 1
+
+    def __init__(self, host, name):
+        self.host = host
+        self.name = name
+#        self.type = type
+
+    def get_idn(self):
+        """This query might return :TEKTRONIX,TDS5104,CF:91.1CT
+        FV:01.00.912, indicating the instrument model number,
+        configured number, and firmware version number.
+        """
+        dev = vxi11.Instrument("TCPIP::" + self.host + "::INSTR")
+        dev.open()
+        dev.io_timeout = 10
+        dev.write('*IDN?')
+        idn = dev.read()
+        dev.close()
+        logging.info('IDN: {}'.format(idn))
+        return idn.split(',')
+
+    def _update_type(self):
+        """For legacy purpose we update the type."""
+        if self.type is None:
+            (self.manufacturer, _) = self.get_idn()[0:2]
+
+            if self.manufacturer == 'TEKTRONIX':
+                self.type = self.OSC_TYPE_TEKTRONIX_TDS
+            elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
+                self.type = self.OSC_TYPE_AGILENT
+
+    def take_screenshot(self, fullscreen=True, image_format='png'):
+
+        self._update_type()
+
+        if self.type == self.OSC_TYPE_TEKTRONIX_TDS:
+            return tektronix.take_screenshot(self.host)
+        elif self.type == self.OSC_TYPE_AGILENT:
+            return agilent.take_screenshot(self.host)
+        else:
+            raise NotImplementedError()
+
+    def take_waveform(self, channel):
+
+        self._update_type()
+
+        if self.type == self.OSC_TYPE_TEKTRONIX_TDS:
+            raise NotImplementedError()
+        elif self.type == self.OSC_TYPE_AGILENT:
+            return agilent.take_waveform(self.host, channel)
+        else:
+            raise NotImplementedError()
