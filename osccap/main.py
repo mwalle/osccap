@@ -25,9 +25,7 @@ import wx.adv
 
 
 from osccap.config import ConfigSettings
-
-from . import tektronix
-from . import agilent
+from osccap.oscilloscope import (agilent, tektronix)
 
 
 if sys.platform.startswith('win'):
