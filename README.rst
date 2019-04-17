@@ -27,8 +27,6 @@ First the key in `HKEY_LOCAL_MACHINE` is checked:
                                 |`- Scopes
                                 |      `- <name>
                                 |            `- <host>
-                                |            `- <id>
-                                |            `- <type>
                                 `- HotKeyModifiers
 
 Second the key in `HKEY_CURRENT_USERA` is checked:
@@ -37,7 +35,7 @@ Second the key in `HKEY_CURRENT_USERA` is checked:
                    `- SOFTWARE
                           `- OscCap
                                 `- HotKeyModifiers
-                                `- LastActiveScope
+                                `- LastActiveName
 
 
 
@@ -47,16 +45,7 @@ Linux
 The configuration is stored in a ini style file at `~/.osccaprc`
 
     [global]
-    last_active_scope = <id>
+    last_active_name = <name>
     
-    [scope_1]
-    id = 1
-    name=Tektronix TDS5104
-    host=osc1
-    type=1
-    
-    [scope_2]
-    id = 2
-    name=Agilent
-    host=osc2
-    type=0
+    [scope_<name>]
+    host=192.168.0.1
