@@ -43,6 +43,16 @@ class Oscilloscope(object):
         logging.info('IDN: {}'.format(idn))
         return idn.split(',')
 
+    def get_channels(self):
+        self._update_type()
+
+        if self.type == self.OSC_TYPE_TEKTRONIX_TDS:
+            return tektronix.get_channels()
+        elif self.type == self.OSC_TYPE_AGILENT:
+            return agilent.get_channels()
+        else:
+            raise NotImplementedError()
+
     def _update_type(self):
         """For legacy purpose we update the type."""
         if self.type is None:
