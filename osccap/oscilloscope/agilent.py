@@ -68,19 +68,3 @@ def take_waveform_word(host, channel):
     values = [(((i[0]<<8 + i[1]) - ((i[0]>>7)*0xffff)) * inc + offs) for i in chunks(data,2)] #Python 3 FIXME test formula for correctness
 
     return values
-
-
-def take_waveform(dev, filename, channel='CHANNEL1', form='ASCII'):
-    dev.write(':WAVEFORM:SOURCE ' + channel)
-    dev.write(':WAVEFORM:FORMAT ' + form)  # ASCII, BYTE, WORD, BINARY
-    dev.write(':WAVEFORM:DATA?')
-    data = dev.read()
-
-    if form == 'WORD':
-        data = data[int(data[1])+2:-1]
-        filename = filename + '.bin'
-    if form == 'ASCII':
-        filename = filename + '.csv'
-
-    with open(filename, 'w') as f:
-        f.write(data)
