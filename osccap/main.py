@@ -192,7 +192,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         for scope in oscilloscopes:
             id = wx.NewIdRef(count=1)
             self.scopes[id] = scope
-            if scope.host == config.active_scope_host:
+            if scope.name == config.active_scope_name:
                 self.active_scope = scope
 
     def _create_channel_ids(self):
@@ -333,7 +333,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
     def on_exit(self, event):
         if self.active_scope:
-            config.active_scope_host = self.active_scope.host
+            config.active_scope_name = self.active_scope.name
         config.save()
         wx.CallAfter(self.Destroy)
         if self.frame:

@@ -25,7 +25,7 @@ HotKey = namedtuple('HotKey', 'modifiers keycode')
 
 class ConfigSettings(object):
     def __init__(self):
-        self.active_scope_id = 0
+        self.active_scope_name = None
         self.scopes = list()
         self.hotkey = None
 
@@ -88,16 +88,16 @@ class ConfigSettings(object):
 
         # load local user properties
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap') as key:
-            self.active_scope_host = self._try_query_value(key,
-                                                           'LastActiveHost',
-                                                           self.scopes[0].host)
+            self.active_scope_name = self._try_query_value(key,
+                                                           'LastActiveName',
+                                                           self.scopes[0].name)
 
     def save_to_win_registry(self):
         # save common program properties
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap',
                              0, winreg.KEY_WRITE)
-        winreg.SetValueEx(key, 'LastActiveHost', None, winreg.REG_SZ,
-                          self.active_scope_host)
+        winreg.SetValueEx(key, 'LastActiveName', None, winreg.REG_SZ,
+                          self.active_scope_name)
         winreg.CloseKey(key)
 
     def load_from_dot_config(self):
@@ -108,14 +108,10 @@ class ConfigSettings(object):
         [global]
         last_active_scope = 2
 
-        [scope_1]
-        id = 1
-        name=Tek
+        [scope_osc01]
         host=osc1
 
-        [scope_2]
-        id = 2
-        name=Agilent
+        [scope_osc02]
         host=osc2
         """
         filename = os.path.expanduser('~/.osccaprc')
@@ -127,21 +123,21 @@ class ConfigSettings(object):
             return
 
         try:
-            self.active_scope_host = parser.get('global', 'last_active_host')
+            self.active_scope_name = parser.get('global', 'last_active_host')
         except configparser.NoSectionError:
             pass
         except configparser.NoOptionError:
             pass
 
         for s in parser.sections():
-            if s.startswith('scope'):
+            if s.startswith('scope_'):
                 try:
-                    name = parser.get(s, 'name')
+                    name = s[len('scope_'):]
                     host = parser.get(s, 'host')
                     self.scopes.append(OscProperties(name, host))
                 except configparser.NoOptionError:
                     pass
-        self.scopes.sort(key=lambda e: e.host)
+        self.scopes.sort(key=lambda e: e.name)
 
     def save_to_dot_config(self):
         filename = os.path.expanduser('~/.osccaprc')
@@ -154,7 +150,7 @@ class ConfigSettings(object):
         except configparser.DuplicateSectionError:
             pass
 
-        parser.set('global', 'last_active_host', str(self.active_scope_host))
+        parser.set('global', 'last_active_name', str(self.active_scope_name))
         fd = open(filename + '~', 'w')
         parser.write(fd)
         os.rename(filename + '~', filename)
@@ -165,5 +161,5 @@ if __name__ == '__main__':
     config = ConfigSettings()
     config.load()
     print(config.scopes)
-    print(config.active_scope_host)
+    print(config.active_scope_name)
     print(config.hotkey)
