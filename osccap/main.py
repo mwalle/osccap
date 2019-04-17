@@ -251,9 +251,9 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def copy_screenshot_to_clipboard(self):
         if self.active_scope:
             if self.active_scope.type == OSC_TYPE_TEKTRONIX_TDS:
-                func = tektronix.take_screenshot_png
+                func = tektronix.take_screenshot
             elif self.active_scope.type == OSC_TYPE_AGILENT:
-                func = agilent.take_screenshot_png
+                func = agilent.take_screenshot
             else:
                 return
             try:
@@ -274,9 +274,9 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def save_screenshot_to_file(self, filename):
         if self.active_scope:
             if self.active_scope.type == OSC_TYPE_TEKTRONIX_TDS:
-                func = tektronix.take_screenshot_png
+                func = tektronix.take_screenshot
             elif self.active_scope.type == OSC_TYPE_AGILENT:
-                func = agilent.take_screenshot_png
+                func = agilent.take_screenshot
             else:
                 logging.warning('unsupported scope type {}'
                                 .format(self.active_scope.type))
@@ -302,7 +302,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                                 flags=wx.ICON_ERROR)
                 return
             elif self.active_scope.type == OSC_TYPE_AGILENT:
-                func = agilent.take_waveform_word
+                func = agilent.take_waveform
             else:
                 return
             try:

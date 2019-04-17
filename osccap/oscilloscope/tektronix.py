@@ -31,7 +31,12 @@ def _get_idn(dev):
     return idn.split(',')
 
 
-def take_screenshot_png(host, fullscreen=True):
+def take_screenshot(host, fullscreen=True, image_format='png'):
+
+    if image_format.lower() != 'png':
+        logging.warning('currently only png format supported')
+        raise Exception()
+
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.io_timeout = 10
