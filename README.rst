@@ -21,6 +21,8 @@ The configuration is stored in the windows registry:
 
 First the key in `HKEY_LOCAL_MACHINE` is checked:
 
+.. code:: shell
+
     HKEY_LOCAL_MACHINE
                    `- SOFTWARE
                           `- OscCap
@@ -30,6 +32,8 @@ First the key in `HKEY_LOCAL_MACHINE` is checked:
                                 `- HotKeyModifiers
 
 Second the key in `HKEY_CURRENT_USERA` is checked:
+
+.. code:: shell
 
     HKEY_CURRENT_USER
                    `- SOFTWARE
@@ -43,6 +47,8 @@ Linux
 '''''
 
 The configuration is stored in a ini style file at `~/.osccaprc`
+
+.. code:: shell
 
     [global]
     last_active_name = <name>
