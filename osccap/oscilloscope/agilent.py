@@ -30,6 +30,14 @@ def binary_block(data):
     return data[2+len_digits:-1]
 
 
+def get_channels():
+    CHANNELS = [
+        'TIME',
+        'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4'
+    ]
+    return CHANNELS
+
+
 def take_screenshot(host, fullscreen=True, image_format='png'):
     logging.debug('agilent: take_screenshot')
 

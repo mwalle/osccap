@@ -31,6 +31,24 @@ def _get_idn(dev):
     return idn.split(',')
 
 
+def get_channel_list(host):
+    dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
+    dev.open()
+    dev.write('SAVE:WAVEFORM:SOURCELIST?')
+    channel_list = dev.read()
+    dev.close()
+    return channel_list
+
+
+def get_channels():
+    CHANNELS = [
+        'TIME',
+        'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
+        'FUNCTION1', 'FUNCTION2', 'FUNCTION3', 'FUNCTION4'
+    ]
+    return CHANNELS
+
+
 def take_screenshot(host, fullscreen=True, image_format='png'):
 
     if image_format.lower() != 'png':
