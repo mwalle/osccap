@@ -29,6 +29,9 @@ class Oscilloscope(object):
         self.name = name
 #        self.type = type
 
+    def __str__(self):
+        return '[name: {} host: {}]'.format(self.name, self.host)
+
     def get_idn(self):
         """This query might return :TEKTRONIX,TDS5104,CF:91.1CT
         FV:01.00.912, indicating the instrument model number,
@@ -36,7 +39,6 @@ class Oscilloscope(object):
         """
         dev = vxi11.Instrument("TCPIP::" + self.host + "::INSTR")
         dev.open()
-        dev.io_timeout = 10
         dev.write('*IDN?')
         idn = dev.read()
         dev.close()
@@ -44,14 +46,17 @@ class Oscilloscope(object):
         return idn.split(',')
 
     def get_channels(self):
-        self._update_type()
+        DEFAULT_CHANNELS = [
+            'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4'
+        ]
 
         if self.type == self.OSC_TYPE_TEKTRONIX_TDS:
             return tektronix.get_channels()
         elif self.type == self.OSC_TYPE_AGILENT:
             return agilent.get_channels()
         else:
-            raise NotImplementedError()
+            logging.warning('unknown scope type {}'.format(self.type))
+            return DEFAULT_CHANNELS
 
     def _update_type(self):
         """For legacy purpose we update the type."""
