@@ -19,7 +19,7 @@ else:
     on_win = False
 
 
-OscProperties = namedtuple('OscProperties', 'name host type')
+OscProperties = namedtuple('OscProperties', 'name host')
 HotKey = namedtuple('HotKey', 'modifiers keycode')
 
 
@@ -62,11 +62,8 @@ class ConfigSettings(object):
                 name = winreg.EnumKey(key, index)
                 try:
                     entry = winreg.OpenKey(key, name)
-#                    scope_id = winreg.QueryValueEx(entry, 'id')[0]
                     scope_host = winreg.QueryValueEx(entry, 'host')[0]
-                    scope_type = winreg.QueryValueEx(entry, 'type')[0]
-                    self.scopes.append(OscProperties(name,
-                                                     scope_host, scope_type))
+                    self.scopes.append(OscProperties(name, scope_host))
                 except WindowsError:
                     logging.error('Error loading config oscilloscope %s', name)
                 index += 1
@@ -115,13 +112,11 @@ class ConfigSettings(object):
         id = 1
         name=Tek
         host=osc1
-        type=1
 
         [scope_2]
         id = 2
         name=Agilent
         host=osc2
-        type=2
         """
         filename = os.path.expanduser('~/.osccaprc')
         parser = SafeConfigParser()
@@ -141,11 +136,9 @@ class ConfigSettings(object):
         for s in parser.sections():
             if s.startswith('scope'):
                 try:
-                    id = parser.getint(s, 'id')
                     name = parser.get(s, 'name')
                     host = parser.get(s, 'host')
-                    type = parser.getint(s, 'type')
-                    self.scopes.append(OscProperties(id, name, host, type))
+                    self.scopes.append(OscProperties(name, host))
                 except configparser.NoOptionError:
                     pass
         self.scopes.sort(key=lambda e: e.host)
