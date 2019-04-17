@@ -30,7 +30,11 @@ def binary_block(data):
     return data[2+len_digits:-1]
 
 
-def take_screenshot_png(host, fullscreen=True):
+def take_screenshot(host, fullscreen=True, image_format='png'):
+
+    if image_format.lower() != 'png':
+        logging.warning('currently only png format supported')
+        raise Exception()
 
     try:
         dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
@@ -46,7 +50,7 @@ def take_screenshot_png(host, fullscreen=True):
     return img_data
 
 
-def take_waveform_word(host, channel):
+def take_waveform(host, channel):
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.write(':WAVEFORM:SOURCE ' + channel)
