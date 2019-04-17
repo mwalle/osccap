@@ -1,0 +1,62 @@
+
+pyhton-vxi11
+============
+
+Supported Scopes
+----------------
+
+* Keysight Technologies DSOX91604A
+* Tektronix TDS5104
+* Tektronix TDS7704
+* Tektronix MSO64
+
+
+Configuration
+-------------
+
+Window
+''''''
+
+The configuration is stored in the windows registry:
+
+First the key in `HKEY_LOCAL_MACHINE` is checked:
+
+    HKEY_LOCAL_MACHINE
+                   `- SOFTWARE
+                          `- OscCap
+                                |`- Scopes
+                                |      `- <name>
+                                |            `- <host>
+                                |            `- <id>
+                                |            `- <type>
+                                `- HotKeyModifiers
+
+Second the key in `HKEY_CURRENT_USERA` is checked:
+
+    HKEY_CURRENT_USER
+                   `- SOFTWARE
+                          `- OscCap
+                                `- HotKeyModifiers
+                                `- LastActiveScope
+
+
+
+Linux
+'''''
+
+The configuration is stored in a ini style file at `~/.osccaprc`
+
+    [global]
+    last_active_scope = <id>
+    
+    [scope_1]
+    id = 1
+    name=Tektronix TDS5104
+    host=osc1
+    type=1
+    
+    [scope_2]
+    id = 2
+    name=Agilent
+    host=osc2
+    type=0
