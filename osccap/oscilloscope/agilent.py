@@ -60,7 +60,7 @@ def take_screenshot(host, fullscreen=True, image_format='png'):
 
 
 def take_waveform(host, channel):
-    logging.debug('agilent: take_waveform')
+    logging.debug('agilent: take_waveform channel {}'.format(channel))
 
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()

@@ -23,6 +23,7 @@ import sys
 import wx
 import wx.adv
 
+from functools import partial
 
 from osccap.config import ConfigSettings
 from osccap.oscilloscope import create_oscilloscopes_from_config
@@ -119,7 +120,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
 
         self._create_scope_ids(oscilloscopes)
-        self._create_channel_ids()
+#        self._create_channel_ids()
 
         # just for global hotkey binding
         if on_win and config.hotkey is not None:
@@ -197,11 +198,28 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
     def _create_channel_ids(self):
         # TODO maybe add in loading a channel
-        for channel in ['CHAN1', 'CHAN2', 'CHAN3', 'CHAN4']:
+        CHANNELS = [
+            'TIME',
+            'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
+            'FUNCTION1', 'FUNCTION2', 'FUNCTION3', 'FUNCTION4'
+        ]
+
+        for channel in sorted(CHANNELS):
             id = wx.NewIdRef(count=1)
             self.channels[id] = channel
             if self.active_channel is None:
                 self.active_channel = self.channels[id]
+
+    def _update_channel_menu_for_scope(self, scope):
+        channels = scope.get_channels()
+        for channel in channels:
+            id = wx.NewIdRef(count=1)
+            item = self.channel_menu.AppendCheckItem(id, channel)
+            self.Bind(wx.EVT_MENU,
+                      partial(self.on_channel_select, channel=channel),
+                      item, id=id)
+            if channel == self.active_channel:
+                self.channel_menu.Check(id, True)
 
     def CreatePopupMenu(self):
         menu = wx.Menu()
@@ -226,17 +244,15 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         else:
             for id, scope in sorted(self.scopes.items()):
                 item = menu.AppendCheckItem(id, scope.name)
-                self.Bind(wx.EVT_MENU, self.on_host_select, item, id=id)
+                self.Bind(wx.EVT_MENU,
+                          partial(self.on_host_select, scope=scope),
+                          item)
                 if scope == self.active_scope:
                     menu.Check(id, True)
         menu.AppendSeparator()
-        channel_menu = wx.Menu()
-        for id, channel in self.channels.items():
-            item = channel_menu.AppendCheckItem(id, channel)
-            self.Bind(wx.EVT_MENU, self.on_channel_select, item, id=id)
-            if channel == self.active_channel:
-                channel_menu.Check(id, True)
-        menu.Append(wx.ID_ANY, 'Select Channel', channel_menu)
+        self.channel_menu = wx.Menu()
+        self._update_channel_menu_for_scope(self.active_scope)
+        menu.Append(wx.ID_ANY, 'Select Channel', self.channel_menu)
         menu.AppendSeparator()
         item = wx.MenuItem(menu, wx.ID_ABOUT, 'About..')
         menu.Bind(wx.EVT_MENU, self.on_about, id=item.GetId())
@@ -312,21 +328,15 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             self.save_waveform_to_file(filename)
         d.Destroy()
 
-    def on_host_select(self, event):
-        event_id = event.GetId()
-        self.active_scope = None
-        for id, scope in self.scopes.items():
-            if id == event_id:
-                self.active_scope = scope
-                break
+    def on_host_select(self, event, scope):
+        self.active_scope = scope
+        logging.info('select scope {}'.format(self.active_scope))
 
-    def on_channel_select(self, event):
-        event_id = event.GetId()
-        self.active_channel = None
-        for id, channel in self.channels.items():
-            if id == event_id:
-                self.active_channel = channel
-                break
+        self._update_channel_menu_for_scope(self.active_scope)
+
+    def on_channel_select(self, event, channel):
+        self.active_channel = channel
+        logging.info('select channel {}'.format(self.active_channel))
 
     def on_left_down(self, event):
         self.copy_screenshot_to_clipboard()
@@ -356,7 +366,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
 def main():
     logging.basicConfig(format='%(levelname)s: %(message)s',
-                        level=logging.INFO)
+                        level=logging.DEBUG)
 
     config.load()
     oscilloscopes = create_oscilloscopes_from_config(config)
