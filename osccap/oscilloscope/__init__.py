@@ -28,6 +28,7 @@ class Oscilloscope(object):
     def __init__(self, host, name):
         self.host = host
         self.name = name
+        self.selected_sources = list()
 
     def __str__(self):
         return '[name: {} host: {}]'.format(self.name, self.host)
@@ -60,10 +61,17 @@ class Oscilloscope(object):
         logging.info('IDN: {}'.format(idn))
         return idn.split(',')
 
-    def get_channels(self):
-        DEFAULT_CHANNELS = [
-            'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4'
-        ]
+    def get_selected_sources(self):
+        return self.selected_sources
+
+    def add_selected_source(self, source):
+        self.selected_sources.append(source)
+
+    def remove_selected_source(self, source):
+        self.selected_sources.remove(source)
+
+    def get_sources(self):
+        DEFAULT_CHANNELS = []
 
         if not self.is_alive():
             logging.warning('scope {} is not alive'.format(self))
@@ -72,9 +80,9 @@ class Oscilloscope(object):
         self._update_manufacturer_model()
 
         if self.manufacturer == 'TEKTRONIX':
-            return tektronix.get_channels(self.model)
+            return tektronix.get_sources(self.model)
         elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.get_channels(self.model)
+            return agilent.get_sources(self.model)
         else:
             logging.warning('unknown scope type {}'.format(self.type))
             return DEFAULT_CHANNELS
@@ -93,16 +101,14 @@ class Oscilloscope(object):
         else:
             raise NotImplementedError()
 
-    def take_waveform(self, channel):
+    def take_waveform(self):
 
         if not self.is_alive():
             raise NotAliveError()
 
         self._update_manufacturer_model()
 
-        if self.manufacturer == 'TEKTRONIX':
-            raise NotImplementedError()
-        elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.take_waveform(self.host, channel)
+        if self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
+            return agilent.take_waveform(self.host, self.selected_sources)
         else:
             raise NotImplementedError()

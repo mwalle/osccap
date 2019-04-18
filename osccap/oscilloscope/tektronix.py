@@ -20,22 +20,37 @@ import time
 import vxi11
 
 
-def get_channel_list(host):
+def get_source_list(host):
+    """This query returns a list of the available waveforms that can be
+    specified as the source for the SAVe:WAVEform command. Source
+    waveforms must have their display mode set to On to appear in this
+    list and to be saved.
+    """
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.write('SAVE:WAVEFORM:SOURCELIST?')
-    channel_list = dev.read()
+    source_list = dev.read()
     dev.close()
-    return channel_list
+    return source_list
 
 
-def get_channels(model):
-    CHANNELS = [
-        'TIME',
-        'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
-        'FUNCTION1', 'FUNCTION2', 'FUNCTION3', 'FUNCTION4'
-    ]
-    return CHANNELS
+def get_sources(model):
+
+    if model in ['MSO58']:
+        SOURCES = [
+            'TIME',
+            'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
+            'CHANNEL5', 'CHANNEL6', 'CHANNEL7', 'CHANNEL8',
+            'FUNCTION1', 'FUNCTION2', 'FUNCTION3', 'FUNCTION4'
+        ]
+    else:
+        SOURCES = [
+            'TIME',
+            'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
+            'FUNCTION1', 'FUNCTION2', 'FUNCTION3', 'FUNCTION4'
+        ]
+
+    return SOURCES
 
 
 def take_screenshot(host, model, fullscreen=True, image_format='png'):

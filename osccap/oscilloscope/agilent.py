@@ -30,15 +30,15 @@ def binary_block(data):
     return data[2+len_digits:-1]
 
 
-def get_channels(model):
+def get_sources(model):
     if model != 'DSOX91604A':
         raise NotImplementedError()
 
-    CHANNELS = [
+    SOURCES = [
         'TIME',
         'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4'
     ]
-    return CHANNELS
+    return SOURCES
 
 
 def take_screenshot(host, model=None, fullscreen=True, image_format='png'):
@@ -65,15 +65,17 @@ def take_screenshot(host, model=None, fullscreen=True, image_format='png'):
     return img_data
 
 
-def take_waveform(host, channel, model=None):
-    logging.debug('agilent: take_waveform channel {}'.format(channel))
+def take_waveform(host, sources, model=None):
+    logging.debug('agilent: take_waveform sources {}'.format(sources))
+
+    # FIXME: to support multiple sources
 
     if model != 'DSOX91604A':
         raise NotImplementedError()
 
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
-    dev.write(':WAVEFORM:SOURCE ' + channel)
+    dev.write(':WAVEFORM:SOURCE ' + sources)
     dev.write(':WAVEFORM:FORMAT WORD') # ASCII, BYTE, WORD, BINARY
     dev.write(':WAVEFORM:DATA?')
     data = dev.read_raw()
