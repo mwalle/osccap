@@ -116,8 +116,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
     def __init__(self, oscilloscopes):
         wx.adv.TaskBarIcon.__init__(self)
-        self.busy = False
-        self.set_icon()
+        self.set_tray_icon(busy=False)
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
 
         self._create_scope_ids(oscilloscopes)
@@ -182,7 +181,9 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 raise Exception('Icon window not found')
         return self._chwnd
 
-    def set_icon(self):
+    def set_tray_icon(self, busy):
+        self.busy = busy
+
         self.icon = wx.Icon()
         if not self.busy:
             wx.Icon.CopyFromBitmap(self.icon, wx.Bitmap(TRAY_ICON))
@@ -267,8 +268,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     def copy_screenshot_to_clipboard(self):
         if self.active_scope:
             try:
-                self.busy = True
-                self.set_icon()
+                self.set_tray_icon(busy=True)
                 copy_screenshot_to_clipboard(self.active_scope)
             except NotAliveError:
                 logging.error('cannot take screenshot from {}'
@@ -284,14 +284,12 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                                 'the screenshot!',
                                 flags=wx.ICON_ERROR)
             finally:
-                self.busy = False
-                self.set_icon()
+                self.set_tray_icon(busy=False)
 
     def save_screenshot_to_file(self, filename):
         if self.active_scope:
             try:
-                self.busy = True
-                self.set_icon()
+                self.set_tray_icon(busy=True)
                 save_screenshot_to_file(self.active_scope, filename)
             except NotAliveError:
                 logging.error('cannot take screenshot from {}'
@@ -307,14 +305,12 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                                 'the screenshot!',
                                 flags=wx.ICON_ERROR)
             finally:
-                self.busy = False
-                self.set_icon()
+                self.set_tray_icon(busy=False)
 
     def save_waveform_to_file(self, filename):
         if self.active_scope:
             try:
-                self.busy = True
-                self.set_icon()
+                self.set_tray_icon(busy=True)
                 save_waveform_to_file(self.active_scope, self.active_channel,
                                       filename)
             except:
@@ -326,8 +322,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                                 flags=wx.ICON_ERROR)
                 pass
             finally:
-                self.busy = False
-                self.set_icon()
+                self.set_tray_icon(busy=False)
 
     def on_to_clipboard(self, event):
         self.copy_screenshot_to_clipboard()
