@@ -265,7 +265,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
         return menu
 
-    def copy_screenshot_to_clipboard(self):
+    def _copy_screenshot_to_clipboard(self):
         if self.active_scope:
             try:
                 self.set_tray_icon(busy=True)
@@ -286,7 +286,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             finally:
                 self.set_tray_icon(busy=False)
 
-    def save_screenshot_to_file(self, filename):
+    def _save_screenshot_to_file(self, filename):
         if self.active_scope:
             try:
                 self.set_tray_icon(busy=True)
@@ -307,7 +307,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             finally:
                 self.set_tray_icon(busy=False)
 
-    def save_waveform_to_file(self, filename):
+    def _save_waveform_to_file(self, filename):
         if self.active_scope:
             try:
                 self.set_tray_icon(busy=True)
@@ -325,14 +325,14 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.set_tray_icon(busy=False)
 
     def on_to_clipboard(self, event):
-        self.copy_screenshot_to_clipboard()
+        self._copy_screenshot_to_clipboard()
 
     def on_to_file(self, event):
         d = wx.FileDialog(None, "Save to", wildcard="*.png",
                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         if d.ShowModal() == wx.ID_OK:
             filename = os.path.join(d.GetDirectory(), d.GetFilename())
-            self.save_screenshot_to_file(filename)
+            self._save_screenshot_to_file(filename)
         d.Destroy()
 
     def on_waveform_to_file(self, event):
@@ -340,21 +340,23 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         if d.ShowModal() == wx.ID_OK:
             filename = os.path.join(d.GetDirectory(), d.GetFilename())
-            self.save_waveform_to_file(filename)
+            self._save_waveform_to_file(filename)
         d.Destroy()
 
     def on_host_select(self, event, scope):
         self.active_scope = scope
         logging.info('select scope {}'.format(self.active_scope))
 
-        self._update_channel_menu_for_scope(self.active_scope)
+        if self.active_scope.is_alive():
+            logging.info('scope {} is alive'.format(self.active_scope))
+            self._update_channel_menu_for_scope(self.active_scope)
 
     def on_channel_select(self, event, channel):
         self.active_channel = channel
         logging.info('select channel {}'.format(self.active_channel))
 
     def on_left_down(self, event):
-        self.copy_screenshot_to_clipboard()
+        self._copy_screenshot_to_clipboard()
 
     def on_exit(self, event):
         if self.active_scope:
