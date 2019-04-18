@@ -26,6 +26,7 @@ import wx.adv
 from functools import partial
 
 from osccap.config import ConfigSettings
+from osccap.errors import NotAliveError
 from osccap.oscilloscope import create_oscilloscopes_from_config
 
 
@@ -269,13 +270,19 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.busy = True
                 self.set_icon()
                 copy_screenshot_to_clipboard(self.active_scope)
-            except Exception as exp:
-                print(exp)
-                self.ShowBallon("Error", "There was an error while capturing "
-                                "the screenshot!", flags=wx.ICON_ERROR)
+            except NotAliveError:
                 logging.error('cannot take screenshot from {}'
                               .format(self.active_scope.name))
-                pass
+                self.ShowBallon('Error', 'Scope not alive. Cannot capture '
+                                'the screenshot!',
+                                flags=wx.ICON_ERROR)
+            except Exception:
+                exp = sys.exc_info()[0]
+                logging.error('cannot take screenshot from {} {}'
+                              .format(self.active_scope.name), exp)
+                self.ShowBallon('Error', 'There was an error while capturing '
+                                'the screenshot!',
+                                flags=wx.ICON_ERROR)
             finally:
                 self.busy = False
                 self.set_icon()
@@ -286,10 +293,19 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.busy = True
                 self.set_icon()
                 save_screenshot_to_file(self.active_scope, filename)
-            except Exception as exp:
+            except NotAliveError:
                 logging.error('cannot take screenshot from {}'
                               .format(self.active_scope.name))
-                pass
+                self.ShowBallon('Error', 'Scope not alive. Cannot capture '
+                                'the screenshot!',
+                                flags=wx.ICON_ERROR)
+            except Exception:
+                exp = sys.exc_info()[0]
+                logging.error('cannot take screenshot from {} {}'
+                              .format(self.active_scope.name), exp)
+                self.ShowBallon('Error', 'There was an error while capturing '
+                                'the screenshot!',
+                                flags=wx.ICON_ERROR)
             finally:
                 self.busy = False
                 self.set_icon()
@@ -302,8 +318,12 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 save_waveform_to_file(self.active_scope, self.active_channel,
                                       filename)
             except:
-                self.ShowBallon("Error", "There was an error while capturing "
-                                "the waveform!", flags=wx.ICON_ERROR)
+                exp = sys.exc_info()[0]
+                logging.error('cannot take waveform from {} {}'
+                              .format(self.active_scope.name), exp)
+                self.ShowBallon('Error', 'There was an error while capturing '
+                                'the screenshot!',
+                                flags=wx.ICON_ERROR)
                 pass
             finally:
                 self.busy = False

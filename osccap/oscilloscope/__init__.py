@@ -2,6 +2,7 @@ import logging
 import socket
 import vxi11
 
+from osccap.errors import NotAliveError
 from osccap.oscilloscope import (agilent, tektronix)
 
 
@@ -82,6 +83,9 @@ class Oscilloscope(object):
 
     def take_screenshot(self, fullscreen=True, image_format='png'):
 
+        if not self.is_alive():
+            raise NotAliveError()
+
         self._update_type()
 
         if self.type == self.OSC_TYPE_TEKTRONIX_TDS:
@@ -92,6 +96,9 @@ class Oscilloscope(object):
             raise NotImplementedError()
 
     def take_waveform(self, channel):
+
+        if not self.is_alive():
+            raise NotAliveError()
 
         self._update_type()
 
