@@ -30,7 +30,10 @@ def binary_block(data):
     return data[2+len_digits:-1]
 
 
-def get_channels():
+def get_channels(model):
+    if model != 'DSOX91604A':
+        raise NotImplementedError()
+
     CHANNELS = [
         'TIME',
         'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4'
@@ -44,6 +47,9 @@ def take_screenshot(host, model=None, fullscreen=True, image_format='png'):
     if image_format.lower() != 'png':
         logging.warning('currently only png format supported')
         raise Exception()
+
+    if model != 'DSOX91604A':
+        raise NotImplementedError()
 
     try:
         dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
@@ -61,6 +67,9 @@ def take_screenshot(host, model=None, fullscreen=True, image_format='png'):
 
 def take_waveform(host, channel, model=None):
     logging.debug('agilent: take_waveform channel {}'.format(channel))
+
+    if model != 'DSOX91604A':
+        raise NotImplementedError()
 
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()

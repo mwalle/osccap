@@ -74,7 +74,7 @@ class Oscilloscope(object):
         if self.manufacturer == 'TEKTRONIX':
             return tektronix.get_channels(self.model)
         elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.get_channels()
+            return agilent.get_channels(self.model)
         else:
             logging.warning('unknown scope type {}'.format(self.type))
             return DEFAULT_CHANNELS
@@ -89,7 +89,7 @@ class Oscilloscope(object):
         if self.manufacturer == 'TEKTRONIX':
             return tektronix.take_screenshot(self.host, self.model)
         elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.take_screenshot(self.host)
+            return agilent.take_screenshot(self.host, self.model)
         else:
             raise NotImplementedError()
 
