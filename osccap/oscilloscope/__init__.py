@@ -1,4 +1,5 @@
 import logging
+import socket
 import vxi11
 
 from osccap.oscilloscope import (agilent, tektronix)
@@ -31,6 +32,17 @@ class Oscilloscope(object):
 
     def __str__(self):
         return '[name: {} host: {}]'.format(self.name, self.host)
+
+    def is_alive(self, timeout=0.1):
+        """Check if the oscilloscope's network connection is alive."""
+        try:
+            with socket.socket(socket.AF_INET) as sock:
+                sock.settimeout(timeout)
+                sock.connect((self.host, 111))
+        except socket.timeout:
+            return False
+
+        return True
 
     def get_idn(self):
         """This query might return :TEKTRONIX,TDS5104,CF:91.1CT
