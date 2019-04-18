@@ -18,7 +18,6 @@ def create_oscilloscopes_from_config(config):
 class Oscilloscope(object):
     host = None
     name = None
-    type = None
 
     manufacturer = None
     model = None
@@ -29,10 +28,13 @@ class Oscilloscope(object):
     def __init__(self, host, name):
         self.host = host
         self.name = name
-#        self.type = type
 
     def __str__(self):
         return '[name: {} host: {}]'.format(self.name, self.host)
+
+    def _update_manufacturer_model(self):
+        """For legacy purpose we update the type."""
+        (self.manufacturer, self.model) = self.get_idn()[0:2]
 
     def is_alive(self, timeout=0.1):
         """Check if the oscilloscope's network connection is alive."""
@@ -63,34 +65,30 @@ class Oscilloscope(object):
             'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4'
         ]
 
-        if self.type == self.OSC_TYPE_TEKTRONIX_TDS:
-            return tektronix.get_channels()
-        elif self.type == self.OSC_TYPE_AGILENT:
+        if not self.is_alive():
+            logging.warning('scope {} is not alive'.format(self))
+            return DEFAULT_CHANNELS
+
+        self._update_manufacturer_model()
+
+        if self.manufacturer == 'TEKTRONIX':
+            return tektronix.get_channels(self.model)
+        elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
             return agilent.get_channels()
         else:
             logging.warning('unknown scope type {}'.format(self.type))
             return DEFAULT_CHANNELS
-
-    def _update_type(self):
-        """For legacy purpose we update the type."""
-        if self.type is None:
-            (self.manufacturer, _) = self.get_idn()[0:2]
-
-            if self.manufacturer == 'TEKTRONIX':
-                self.type = self.OSC_TYPE_TEKTRONIX_TDS
-            elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
-                self.type = self.OSC_TYPE_AGILENT
 
     def take_screenshot(self, fullscreen=True, image_format='png'):
 
         if not self.is_alive():
             raise NotAliveError()
 
-        self._update_type()
+        self._update_manufacturer_model()
 
-        if self.type == self.OSC_TYPE_TEKTRONIX_TDS:
-            return tektronix.take_screenshot(self.host)
-        elif self.type == self.OSC_TYPE_AGILENT:
+        if self.manufacturer == 'TEKTRONIX':
+            return tektronix.take_screenshot(self.host, self.model)
+        elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
             return agilent.take_screenshot(self.host)
         else:
             raise NotImplementedError()
@@ -100,11 +98,11 @@ class Oscilloscope(object):
         if not self.is_alive():
             raise NotAliveError()
 
-        self._update_type()
+        self._update_manufacturer_model()
 
-        if self.type == self.OSC_TYPE_TEKTRONIX_TDS:
+        if self.manufacturer == 'TEKTRONIX':
             raise NotImplementedError()
-        elif self.type == self.OSC_TYPE_AGILENT:
+        elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
             return agilent.take_waveform(self.host, channel)
         else:
             raise NotImplementedError()

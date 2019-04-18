@@ -20,17 +20,6 @@ import time
 import vxi11
 
 
-def _get_idn(dev):
-    """This query might return :TEKTRONIX,TDS5104,CF:91.1CT
-    FV:01.00.912, indicating the instrument model number,
-    configured number, and firmware version number.
-    """
-    dev.write('*IDN?')
-    idn = dev.read()
-    logging.info('Tektronix IDN: {}'.format(idn))
-    return idn.split(',')
-
-
 def get_channel_list(host):
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
@@ -40,7 +29,7 @@ def get_channel_list(host):
     return channel_list
 
 
-def get_channels():
+def get_channels(model):
     CHANNELS = [
         'TIME',
         'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
@@ -49,7 +38,7 @@ def get_channels():
     return CHANNELS
 
 
-def take_screenshot(host, fullscreen=True, image_format='png'):
+def take_screenshot(host, model, fullscreen=True, image_format='png'):
 
     if image_format.lower() != 'png':
         logging.warning('currently only png format supported')
@@ -58,8 +47,6 @@ def take_screenshot(host, fullscreen=True, image_format='png'):
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
     dev.io_timeout = 10
-
-    model = _get_idn(dev)[1]
 
     if model in ['TDS5104', 'TDS7704']:
         dev.write(r'EXPORT:FILENAME "C:\TEMP\SCREEN.PNG"')
