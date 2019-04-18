@@ -62,6 +62,8 @@ def take_screenshot(host, model, fullscreen=True, image_format='png'):
         time.sleep(3)
         dev.write(r'FILESYSTEM:PRINT "C:\TEMP\SCREEN.PNG", GPIB')
         time.sleep(0.5)
+        img_data = dev.read_raw()
+        dev.write(r'FILESYSTEM:DELETE "C:\TEMP\SCREEN.PNG"')
 
     elif model in ['MSO54', 'MSO56', 'MSO58', 'MSO64']:
         dev.write(r'SAVE:IMAGE "screen.png"')
@@ -75,12 +77,12 @@ def take_screenshot(host, model, fullscreen=True, image_format='png'):
             if save_time > 10000:
                 raise Exception('save image takes longer than 10 seconds')
         dev.write('FILESYSTEM:READFILE "screen.png"')
+        img_data = dev.read_raw()
+        dev.write(r'FILESYSTEM:DELETE "screen.png"')
 
     else:
         raise Exception('scope type not known')
 
-    img_data = dev.read_raw()
-    dev.write(r'FILESYSTEM:DELETE "C:\TEMP\SCREEN.PNG"')
     dev.close()
 
     return img_data
