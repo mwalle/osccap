@@ -350,10 +350,6 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         self.active_scope = scope
         logging.info('select scope {}'.format(self.active_scope))
 
-        if self.active_scope.is_alive():
-            logging.info('scope {} is alive'.format(self.active_scope))
-            self._update_channel_menu_for_scope(self.active_scope)
-
     def on_channel_select(self, event, channel):
         self.active_channel = channel
         logging.info('select channel {}'.format(self.active_channel))
