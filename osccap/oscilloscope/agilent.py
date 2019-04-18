@@ -38,7 +38,7 @@ def get_channels():
     return CHANNELS
 
 
-def take_screenshot(host, fullscreen=True, image_format='png'):
+def take_screenshot(host, model=None, fullscreen=True, image_format='png'):
     logging.debug('agilent: take_screenshot')
 
     if image_format.lower() != 'png':
@@ -59,7 +59,7 @@ def take_screenshot(host, fullscreen=True, image_format='png'):
     return img_data
 
 
-def take_waveform(host, channel):
+def take_waveform(host, channel, model=None):
     logging.debug('agilent: take_waveform channel {}'.format(channel))
 
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
