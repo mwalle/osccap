@@ -245,7 +245,10 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             menu.Enable(ID_WAVEFORM_TO_FILE, False)
         else:
             for id, scope in sorted(self.scopes.items()):
-                item = menu.AppendCheckItem(id, scope.name)
+                item = menu.AppendCheckItem(id, '{} - {} {}'
+                                            .format(scope.name,
+                                                    scope.manufacturer,
+                                                    scope.model))
                 self.Bind(wx.EVT_MENU,
                           partial(self.on_host_select, scope=scope),
                           item)
