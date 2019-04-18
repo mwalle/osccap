@@ -111,8 +111,7 @@ ID_WAVEFORM_TO_FILE = wx.NewIdRef(count=1)
 class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     scopes = dict()
     active_scope = None
-    channels = dict()
-    active_channel = None
+    selected_channels = list()
 
     def __init__(self, oscilloscopes):
         wx.adv.TaskBarIcon.__init__(self)
@@ -198,20 +197,6 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             if scope.name == config.active_scope_name:
                 self.active_scope = scope
 
-    def _create_channel_ids(self):
-        # TODO maybe add in loading a channel
-        CHANNELS = [
-            'TIME',
-            'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
-            'FUNCTION1', 'FUNCTION2', 'FUNCTION3', 'FUNCTION4'
-        ]
-
-        for channel in sorted(CHANNELS):
-            id = wx.NewIdRef(count=1)
-            self.channels[id] = channel
-            if self.active_channel is None:
-                self.active_channel = self.channels[id]
-
     def _update_channel_menu_for_scope(self, scope):
         channels = scope.get_channels()
         for channel in channels:
@@ -220,21 +205,25 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             self.Bind(wx.EVT_MENU,
                       partial(self.on_channel_select, channel=channel),
                       item, id=id)
-            if channel == self.active_channel:
+
+            if channel in self.selected_channels:
                 self.channel_menu.Check(id, True)
 
     def CreatePopupMenu(self):
         menu = wx.Menu()
+
         item = wx.MenuItem(menu, ID_TO_CLIPBOARD, 'To clipboard')
         menu.Bind(wx.EVT_MENU, self.on_to_clipboard, id=item.GetId())
         menu.Append(item)
         item = wx.MenuItem(menu, ID_TO_FILE, 'To file..')
         menu.Bind(wx.EVT_MENU, self.on_to_file, id=item.GetId())
         menu.Append(item)
+
         menu.AppendSeparator()
         item = wx.MenuItem(menu, ID_WAVEFORM_TO_FILE, 'Waveform to file..')
         menu.Bind(wx.EVT_MENU, self.on_waveform_to_file, id=item.GetId())
         menu.Append(item)
+
         menu.AppendSeparator()
         if len(self.scopes) == 0:
             item = wx.MenuItem(menu, -1, 'No scopes')
@@ -254,10 +243,12 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                           item)
                 if scope == self.active_scope:
                     menu.Check(id, True)
+
         menu.AppendSeparator()
         self.channel_menu = wx.Menu()
         self._update_channel_menu_for_scope(self.active_scope)
         menu.Append(wx.ID_ANY, 'Select Channel', self.channel_menu)
+
         menu.AppendSeparator()
         item = wx.MenuItem(menu, wx.ID_ABOUT, 'About..')
         menu.Bind(wx.EVT_MENU, self.on_about, id=item.GetId())
@@ -314,7 +305,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         if self.active_scope:
             try:
                 self.set_tray_icon(busy=True)
-                save_waveform_to_file(self.active_scope, self.active_channel,
+                save_waveform_to_file(self.active_scope, self.selected_channels,
                                       filename)
             except:
                 exp = sys.exc_info()[0]
@@ -351,8 +342,14 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         logging.info('select scope {}'.format(self.active_scope))
 
     def on_channel_select(self, event, channel):
-        self.active_channel = channel
-        logging.info('select channel {}'.format(self.active_channel))
+        logging.info('select channel {}'.format(channel))
+
+        if channel in self.selected_channels:
+            self.selected_channels.remove(channel)
+        else:
+            self.selected_channels.append(channel)
+
+        logging.info('select channels {}'.format(self.selected_channels))
 
     def on_left_down(self, event):
         self._copy_screenshot_to_clipboard()
