@@ -63,7 +63,7 @@ def take_screenshot(host, model, fullscreen=True, image_format='png'):
         dev.write(r'FILESYSTEM:PRINT "C:\TEMP\SCREEN.PNG", GPIB')
         time.sleep(0.5)
 
-    elif model in ['MSO64', 'MSO58']:
+    elif model in ['MSO54', 'MSO56', 'MSO58', 'MSO64']:
         dev.write(r'SAVE:IMAGE "screen.png"')
         save_time = 0
         dev.write('*OPC?')
