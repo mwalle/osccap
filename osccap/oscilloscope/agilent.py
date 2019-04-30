@@ -16,18 +16,41 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import math
+import numpy as np
+import time
 import vxi11
 
 
-def chunks(l, n):
-    """Yield successive n-sized chunks from l."""
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
+#class Timeit(object):
+#    def __init__(self):
+#        self.time = time.time()
+#        print('{}: {}'.format('start', str(time.time() - self.time)))
+#
+#    def print(self, msg):
+#        print('{}: {}'.format(msg, str(time.time() - self.time)))
+#        self.time = time.time()
 
 
 def binary_block(data):
+    """Extract the binary block from the return value.
+
+    .-----------------------------------------------------------.
+    |  # | N | L (N bytes) | 0 1 2 ... L-1                | End |
+    `-----------------------------------------------------------'
+       |   |   |             |                               |
+       |   |   |             |                               ` Termination
+       |   |   |             |                                 character
+       |   |   |             ` L bytes, words, or ASCII
+       |   |   |               characters of waveform data
+       |   |   ` Number L of bytes of waveform data to follow
+       |   ` Number N of bytes in Length block
+       ` Start of response
+    """
     len_digits = int(chr(data[1]))
-    return data[2+len_digits:-1]
+    bytes_to_read = data[2:2+len_digits]
+    result = data[2+len_digits:-1]
+    return result
 
 
 def get_sources(model):
@@ -42,6 +65,7 @@ def get_sources(model):
 
 
 def take_screenshot(host, model=None, fullscreen=True, image_format='png'):
+
     logging.debug('agilent: take_screenshot')
 
     if image_format.lower() != 'png':
@@ -65,32 +89,123 @@ def take_screenshot(host, model=None, fullscreen=True, image_format='png'):
     return img_data
 
 
-def take_waveform(host, sources, model=None):
-    logging.debug('agilent: take_waveform sources {}'.format(sources))
 
-    # FIXME: to support multiple sources
+def get_waveform_preamble(dev):
+    """<format>, <type>, <points>, <count> , <X increment>, <X origin>, < X
+    reference>, <Y increment>, <Y origin>, <Y reference>, <coupling>, <X display
+    range>, <X display origin>, <Y display range>, <Y display origin>, <date>,
+    <time>, <frame model #>, <acquisition mode>, <completion>, <X units>, <Y
+    units>, <max bandwidth limit>, <min bandwidth limit>"""
 
-    if model != 'DSOX91604A':
-        raise NotImplementedError()
+    dev.write(':WAVEFORM:PREAMBLE?')
+    preamble = dev.read_raw()[:-1].decode('utf-8')
+    preamble = preamble.replace('"', '').split(',')
+
+
+def convert_waveform_data(bin_data, increment, offset):
+    """Convert the values in the (numpy) array.
+
+    Multiply the values with 'increment' and add the 'offset'."""
+
+    bin_data = np.frombuffer(bin_data, dtype='>i2')
+    return np.multiply(bin_data, increment) + offset
+
+
+def take_waveform(host, active_sources):
+    import vxi11
 
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
-    dev.write(':WAVEFORM:SOURCE ' + sources)
-    dev.write(':WAVEFORM:FORMAT WORD') # ASCII, BYTE, WORD, BINARY
-    dev.write(':WAVEFORM:DATA?')
-    data = dev.read_raw()
-    data = data[int(data[1])+2:-1]
-    if len(data) % 2 != 0:
-        raise ValueError('received data length not mutiple of 2')
-    dev.write(':WAVEFORM:YINCREMENT?')
-    inc = float(dev.read()[:-1])
-    dev.write(':WAVEFORM:YORIGIN?')
-    offs = float(dev.read()[:-1])
+    waveform = _take_waveform(dev, active_sources)
     dev.close()
+    return waveform
 
-    # convert data to 2 8 bit chunks, take HO bits, shift left, add LO bits,
-    # subtract rightmost HO bit multiplied by #FFFF for signage, multiply
-    # with increment and add offset
-    values = [(((i[0]<<8 + i[1]) - ((i[0]>>7)*0xffff)) * inc + offs) for i in chunks(data,2)] #Python 3 FIXME test formula for correctness
 
-    return values
+def _take_time_info(dev):
+    logging.debug('agilent: take_waveform TIME')
+
+    dev.write(':ACQUIRE:POINTS?')
+    points = int(dev.read())
+
+    dev.write(':WAVEFORM:XINCREMENT?')
+    delta_t = float(dev.read())
+
+    dev.write(':WAVEFORM:XORIGIN?')
+    t_start = float(dev.read())
+
+    # round t_start accuracy to floor of delta_t
+    # -> timebase is closer to zero
+    t_start = math.floor(t_start / delta_t) * delta_t
+
+    t_end = t_start + points * delta_t
+
+    # determine the precision of the mantisse for the format output
+    mantisse_corner = math.floor( \
+            math.log(max(abs(t_start),abs(t_end)),10) )
+    mantisse_delta_t = len(("%e" % delta_t).split('e')[0].rstrip('0')) - \
+            2 - math.floor(math.log(delta_t,10))
+    mantisse_time = str(mantisse_corner + mantisse_delta_t)
+
+    time_format = '{:.' + mantisse_time + 'e}'
+
+    logging.debug('agilent: TIME t_start={} t_end={} delta_t={} time_format={}'
+                  .format(t_start, t_end, delta_t, time_format))
+
+    time_array = np.arange(t_start, t_end, delta_t)
+
+    return time_array
+
+
+def _take_waveform_from_source(dev, source):
+
+    dev.write(':ACQUIRE:POINTS?')
+    points = int(dev.read())
+
+    dev.write(':WAVEFORM:SOURCE ' + source)
+    start_time = time.time()
+
+    dev.write(':WAVEFORM:BYTEORDER MSBFIRST')
+
+    dev.write(':WAVEFORM:YINCREMENT?')
+    increment = float(dev.read())
+
+    dev.write(':WAVEFORM:YORIGIN?')
+    offset = float(dev.read())
+
+    logging.debug('agilent: {} points={} increment={} offset={}'.format(source, points, increment, offset))
+
+    dev.write(':WAVEFORM:DATA?')
+    binary = binary_block(dev.read_raw())
+    waveform = convert_waveform_data(binary, increment, offset)
+
+    logging.debug('agilent: {} read_time={}'.format(source, str(time.time() - start_time)))
+
+    return waveform
+
+
+def _take_waveform(dev, active_sources):
+
+    logging.debug('agilent: take_waveform sources {}'.format(active_sources))
+
+    sources = {}
+
+    # Disable output header response
+    dev.write(':SYSTEM:HEADER 0')
+
+    # Set waveform read format. ASCII, BYTE, WORD, BINARY
+    dev.write(':WAVEFORM:FORMAT WORD')
+
+    if 'TIME' in active_sources:
+        sources['TIME'] = _take_time_info(dev)
+
+    for source in [x for x in active_sources if x != 'TIME']:
+        sources[source] = _take_waveform_from_source(dev, source)
+
+    return sources
+
+
+if __name__ == '__main__':
+    logging.basicConfig(format='%(levelname)s: %(message)s',
+                        level=logging.DEBUG)
+    waveform = take_waveform('osc05', ['TIME', 'CHANNEL1', 'CHANNEL2'])
+    np.savetxt("foo.csv", waveform['CHANNEL1'], delimiter=",", fmt='%.7e')
