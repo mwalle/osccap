@@ -18,6 +18,7 @@
 import csv
 import io
 import logging
+import numpy
 import os
 import sys
 import traceback
@@ -91,13 +92,14 @@ def save_screenshot_to_file(scope, filename):
 
 
 def save_waveform_to_file(scope, filename):
-    waveform = scope.take_waveform()
+    (time_array, waveforms) = scope.take_waveform()
 
-    with open(filename, 'w') as f:
-        writer = csv.writer(f)
-        values = zip(waveform)
-        for value in values:
-            writer.writerow(value)
+    array = time_array
+
+    for source in scope.selected_sources:
+        array = numpy.vstack((array, waveforms[source]))
+
+    numpy.savetxt(filename, numpy.transpose(array), delimiter=",", fmt='%.7e')
 
 
 # There is only one configuration, create it
