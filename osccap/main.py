@@ -20,6 +20,7 @@ import io
 import logging
 import os
 import sys
+import traceback
 import wx
 import wx.adv
 
@@ -262,17 +263,19 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.set_tray_icon(busy=True)
                 copy_screenshot_to_clipboard(self.active_scope)
             except NotAliveError:
-                logging.error('cannot take screenshot from {}'
-                              .format(self.active_scope.name))
+                logging.error('cannot take screenshot from {} {}'
+                              .format(self.active_scope.name,
+                                      traceback.format_exc()))
                 self.ShowBallon('Error', 'Scope not alive. Cannot capture '
                                 'the screenshot!',
                                 flags=wx.ICON_ERROR)
-            except Exception:
+            except Exception as exp:
                 exp = sys.exc_info()[0]
                 logging.error('cannot take screenshot from {} {}'
-                              .format(self.active_scope.name), exp)
-                self.ShowBallon('Error', 'There was an error while capturing '
-                                'the screenshot!',
+                              .format(self.active_scope.name,
+                                      traceback.format_exc()))
+                self.ShowBallon('Unknown Error while taking screenshot',
+                                traceback.format_exc(),
                                 flags=wx.ICON_ERROR)
             finally:
                 self.set_tray_icon(busy=False)
@@ -283,17 +286,18 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.set_tray_icon(busy=True)
                 save_screenshot_to_file(self.active_scope, filename)
             except NotAliveError:
-                logging.error('cannot take screenshot from {}'
-                              .format(self.active_scope.name))
+                logging.error('cannot take screenshot from {} {}'
+                              .format(self.active_scope.name,
+                                      traceback.format_exc()))
                 self.ShowBallon('Error', 'Scope not alive. Cannot capture '
                                 'the screenshot!',
                                 flags=wx.ICON_ERROR)
-            except Exception:
-                exp = sys.exc_info()[0]
+            except Exception as exp:
                 logging.error('cannot take screenshot from {} {}'
-                              .format(self.active_scope.name), exp)
-                self.ShowBallon('Error', 'There was an error while capturing '
-                                'the screenshot!',
+                              .format(self.active_scope.name,
+                                      traceback.format_exc()))
+                self.ShowBallon('Unknown Error while taking screenshot',
+                                traceback.format_exc(),
                                 flags=wx.ICON_ERROR)
             finally:
                 self.set_tray_icon(busy=False)
@@ -303,14 +307,20 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             try:
                 self.set_tray_icon(busy=True)
                 save_waveform_to_file(self.active_scope, filename)
-            except:
-                exp = sys.exc_info()[0]
-                logging.error('cannot take waveform from {} {}'
-                              .format(self.active_scope.name), exp)
-                self.ShowBallon('Error', 'There was an error while capturing '
-                                'the screenshot!',
+            except NotAliveError:
+                logging.error('cannot take screenshot from {} {}'
+                              .format(self.active_scope.name,
+                                      traceback.format_exc()))
+                self.ShowBallon('Error', 'Scope not alive. Cannot capture '
+                                'the waveform!',
                                 flags=wx.ICON_ERROR)
-                pass
+            except Exception as exc:
+                logging.error('cannot take waveform from {} {}'
+                              .format(self.active_scope.name,
+                                      traceback.format_exc()))
+                self.ShowBallon('Unknown Error while taking waveform',
+                                traceback.format_exc(),
+                                flags=wx.ICON_ERROR)
             finally:
                 self.set_tray_icon(busy=False)
 
