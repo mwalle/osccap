@@ -38,14 +38,12 @@ def get_sources(model):
 
     if model in ['MSO58']:
         SOURCES = [
-            'TIME',
             'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
             'CHANNEL5', 'CHANNEL6', 'CHANNEL7', 'CHANNEL8',
             'FUNCTION1', 'FUNCTION2', 'FUNCTION3', 'FUNCTION4'
         ]
     else:
         SOURCES = [
-            'TIME',
             'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
             'FUNCTION1', 'FUNCTION2', 'FUNCTION3', 'FUNCTION4'
         ]
