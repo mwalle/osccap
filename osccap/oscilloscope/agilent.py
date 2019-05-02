@@ -58,7 +58,6 @@ def get_sources(model):
         raise NotImplementedError()
 
     SOURCES = [
-        'TIME',
         'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4'
     ]
     return SOURCES
@@ -89,13 +88,17 @@ def take_screenshot(host, model=None, fullscreen=True, image_format='png'):
     return img_data
 
 
-
 def get_waveform_preamble(dev):
-    """<format>, <type>, <points>, <count> , <X increment>, <X origin>, < X
-    reference>, <Y increment>, <Y origin>, <Y reference>, <coupling>, <X display
-    range>, <X display origin>, <Y display range>, <Y display origin>, <date>,
-    <time>, <frame model #>, <acquisition mode>, <completion>, <X units>, <Y
-    units>, <max bandwidth limit>, <min bandwidth limit>"""
+    """Get the waveform preamble information.
+
+    Following fileds will be returned:
+    <format>, <type>, <points>, <count> , <X increment>, <X origin>,
+    <X reference>, <Y increment>, <Y origin>, <Y reference>, <coupling>,
+    <X display range>, <X display origin>, <Y display range>,
+    <Y display origin>, <date>, <time>, <frame model #>, <acquisition mode>,
+    <completion>, <X units>, <Y units>, <max bandwidth limit>,
+    <min bandwidth limit>
+    """
 
     dev.write(':WAVEFORM:PREAMBLE?')
     preamble = dev.read_raw()[:-1].decode('utf-8')
@@ -116,9 +119,9 @@ def take_waveform(host, active_sources):
 
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
-    waveform = _take_waveform(dev, active_sources)
+    (time_array, waveform) = _take_waveform(dev, active_sources)
     dev.close()
-    return waveform
+    return (time_array, waveform)
 
 
 def _take_time_info(dev):
@@ -141,7 +144,7 @@ def _take_time_info(dev):
 
     # determine the precision of the mantisse for the format output
     mantisse_corner = math.floor( \
-            math.log(max(abs(t_start),abs(t_end)),10) )
+            math.log(max(abs(t_start),abs(t_end)),10))
     mantisse_delta_t = len(("%e" % delta_t).split('e')[0].rstrip('0')) - \
             2 - math.floor(math.log(delta_t,10))
     mantisse_time = str(mantisse_corner + mantisse_delta_t)
@@ -172,13 +175,15 @@ def _take_waveform_from_source(dev, source):
     dev.write(':WAVEFORM:YORIGIN?')
     offset = float(dev.read())
 
-    logging.debug('agilent: {} points={} increment={} offset={}'.format(source, points, increment, offset))
+    logging.debug('agilent: {} points={} increment={} offset={}'
+                  .format(source, points, increment, offset))
 
     dev.write(':WAVEFORM:DATA?')
     binary = binary_block(dev.read_raw())
     waveform = convert_waveform_data(binary, increment, offset)
 
-    logging.debug('agilent: {} read_time={}'.format(source, str(time.time() - start_time)))
+    logging.debug('agilent: {} read_time={}'
+                  .format(source, str(time.time() - start_time)))
 
     return waveform
 
@@ -187,25 +192,24 @@ def _take_waveform(dev, active_sources):
 
     logging.debug('agilent: take_waveform sources {}'.format(active_sources))
 
-    sources = {}
-
     # Disable output header response
     dev.write(':SYSTEM:HEADER 0')
 
     # Set waveform read format. ASCII, BYTE, WORD, BINARY
     dev.write(':WAVEFORM:FORMAT WORD')
 
-    if 'TIME' in active_sources:
-        sources['TIME'] = _take_time_info(dev)
+    time_array = _take_time_info(dev)
 
+    waveforms = {}
     for source in [x for x in active_sources if x != 'TIME']:
-        sources[source] = _take_waveform_from_source(dev, source)
+        waveforms[source] = _take_waveform_from_source(dev, source)
 
-    return sources
+    return (time_array, waveforms)
 
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s: %(message)s',
                         level=logging.DEBUG)
-    waveform = take_waveform('osc05', ['TIME', 'CHANNEL1', 'CHANNEL2'])
+    (time_array, waveform) = take_waveform('osc05',
+                                           ['TIME', 'CHANNEL1', 'CHANNEL2'])
     np.savetxt("foo.csv", waveform['CHANNEL1'], delimiter=",", fmt='%.7e')
