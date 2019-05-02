@@ -37,20 +37,21 @@ def test_take_waveform():
     device = MagicMock()
     device.read = MagicMock()
     device.read.side_effect = [
-        2,
-        1,
-        0,
-        2,
-        0,
+        2,  # POINTS
+        1,  # XINCREMENT
+        0,  # XORIGIN
+        2,  # POINTS
+        1,  # YINCREMENT
+        0,  # YORIGIN
+        2,  # POINTS
+        1,  # YINCREMENT
+        0,  # YORIGIN
     ]
     device.read_raw = MagicMock()
     device.read_raw.side_effect = [
             b'#232\x00\x01\x00\x02\x00\x03\xfdW\xfd+\xfc\xd0\xfa\xef\xfc\x8b\xfbB\xfcB\xfe\x0b\xfcl\xfbi\xfeR\xfdC\xfc\x8f\n',
             b'#232\x00\x10\x00\x20\x00\x30\xfdW\xfd+\xfc\xd0\xfa\xef\xfc\x8b\xfbB\xfcB\xfe\x0b\xfcl\xfbi\xfeR\xfdC\xfc\x8f\n',
         ]
-    waveform = _take_waveform(device, ['S1'])
-    #waveform = _take_waveform(device, ['S1', 'S2'])
+    (time_array, waveform) = _take_waveform(device, ['S1'])
     eq_(waveform['S1'][0], 1)
     eq_(waveform['S1'][1], 2)
-#    eq_(waveform['S2'][0], 32.0)
-#    eq_(waveform['S2'][1], 64.0)
