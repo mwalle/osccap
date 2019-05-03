@@ -159,7 +159,7 @@ def take_waveform(host, active_sources, format='ASCII'):
 def _take_time_info(dev):
     logging.debug('agilent: take_waveform TIME')
 
-    dev.write(':ACQUIRE:POINTS?')
+    dev.write(':WAVEFORM:POINTS?')
     points = int(dev.read())
 
     dev.write(':WAVEFORM:XINCREMENT?')
