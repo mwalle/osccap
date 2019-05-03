@@ -94,13 +94,42 @@ def save_screenshot_to_file(scope, filename):
 def save_waveform_to_file(scope, filename, fmt):
     (time_array, time_fmt, waveforms) = scope.take_waveform()
 
-    if fmt == 'timed':
+    if fmt == 'combined':
+        save_fmt = list()
+
+        array = numpy.array(list(waveforms.values()))
+
+        for source in scope.selected_sources:
+
+            save_fmt.append('%.7e')
+
+        start_time = time.time()
+        numpy.savetxt(filename, numpy.transpose(array),
+                      delimiter=",", fmt=save_fmt)
+        logging.debug('save_waveform_to_file: {} save_time={}'
+                      .format(scope.selected_sources, 
+                      str(time.time() - start_time)))
+
+    elif fmt == 'separated':
+
+        for source in scope.selected_sources:
+
+            save_filename = filename.replace('.csv', '_{}.csv'.format(source))
+
+            start_time = time.time()
+            numpy.savetxt(save_filename, waveforms[source],
+                          delimiter=",", fmt='%.7e')
+            logging.debug('save_waveform_to_file: {} save_time={}'
+                          .format(source, str(time.time() - start_time)))
+
+    elif fmt == 'timed-combined':
         save_fmt = list()
 
         array = time_array
         save_fmt.append(time_fmt)
 
         for source in scope.selected_sources:
+
             array = numpy.vstack((array, waveforms[source]))
             save_fmt.append('%.7e')
 
@@ -109,7 +138,6 @@ def save_waveform_to_file(scope, filename, fmt):
                       delimiter=",", fmt=save_fmt)
         logging.debug('save_waveform_to_file: {} save_time={}'
                       .format(source, str(time.time() - start_time)))
-
 
     elif fmt == 'timed-separated':
         save_fmt = list()
@@ -254,7 +282,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         menu.Append(item)
         menu_waveform_format = wx.Menu()
         menu.Append(wx.ID_ANY, 'Waveform Format', menu_waveform_format)
-        for fmt in ['binary', 'timed', 'separated', 'timed-separated']:
+        for fmt in ['binary', 'combined', 'separated', 'timed-combined', 'timed-separated']:
             id = wx.NewIdRef(count=1)
             item = menu_waveform_format.AppendCheckItem(id, fmt)
             self.Bind(wx.EVT_MENU,
