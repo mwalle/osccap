@@ -90,15 +90,26 @@ def save_screenshot_to_file(scope, filename):
         f.write(screen)
 
 
-def save_waveform_to_file(scope, filename):
+def save_waveform_to_file(scope, filename, fmt):
     (time_array, waveforms) = scope.take_waveform()
 
-    array = time_array
+    if fmt == 'timed':
+        array = time_array
 
-    for source in scope.selected_sources:
-        array = numpy.vstack((array, waveforms[source]))
+        for source in scope.selected_sources:
+            array = numpy.vstack((array, waveforms[source]))
 
-    numpy.savetxt(filename, numpy.transpose(array), delimiter=",", fmt='%.7e')
+        numpy.savetxt(filename, numpy.transpose(array), delimiter=",", fmt='%.7e')
+
+    elif fmt == 'timed-separated':
+
+        for source in scope.selected_sources:
+
+            save_filename = filename.replace('.csv', '_{}.csv'.format(source))
+            array = time_array
+            array = numpy.vstack((array, waveforms[source]))
+
+            numpy.savetxt(save_filename, numpy.transpose(array), delimiter=",", fmt='%.7e')
 
 
 # There is only one configuration, create it
@@ -112,6 +123,7 @@ ID_WAVEFORM_TO_FILE = wx.NewIdRef(count=1)
 
 class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     active_scope = None
+    selected_waveform_fmt = 'timed-separated'
 
     def __init__(self, oscilloscopes):
         wx.adv.TaskBarIcon.__init__(self)
@@ -219,8 +231,18 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
         menu.AppendSeparator()
         item = wx.MenuItem(menu, ID_WAVEFORM_TO_FILE, 'Waveform to file..')
-        menu.Bind(wx.EVT_MENU, self.on_waveform_to_file, id=item.GetId())
+        menu.Bind(wx.EVT_MENU, partial(self.on_waveform_to_file, fmt=self.selected_waveform_fmt), id=item.GetId())
         menu.Append(item)
+        menu_waveform_format = wx.Menu()
+        menu.Append(wx.ID_ANY, 'Waveform Format', menu_waveform_format)
+        for fmt in ['binary', 'timed', 'separated', 'timed-separated']:
+            id = wx.NewIdRef(count=1)
+            item = menu_waveform_format.AppendCheckItem(id, fmt)
+            self.Bind(wx.EVT_MENU,
+                      partial(self.on_waveform_fmt_select, fmt=fmt),
+                      item, id=id)
+            if fmt == self.selected_waveform_fmt:
+                menu_waveform_format.Check(id, True)
 
         menu.AppendSeparator()
         if len(self.oscilloscopes) == 0:
@@ -303,11 +325,11 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             finally:
                 self.set_tray_icon(busy=False)
 
-    def _save_waveform_to_file(self, filename):
+    def _save_waveform_to_file(self, filename, fmt):
         if self.active_scope:
             try:
                 self.set_tray_icon(busy=True)
-                save_waveform_to_file(self.active_scope, filename)
+                save_waveform_to_file(self.active_scope, filename, fmt)
             except NotAliveError:
                 logging.error('cannot take screenshot from {} {}'
                               .format(self.active_scope.name,
@@ -336,12 +358,13 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             self._save_screenshot_to_file(filename)
         d.Destroy()
 
-    def on_waveform_to_file(self, event):
+    def on_waveform_to_file(self, event, fmt):
         d = wx.FileDialog(None, "Save to", wildcard="*.csv",
                           style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+
         if d.ShowModal() == wx.ID_OK:
             filename = os.path.join(d.GetDirectory(), d.GetFilename())
-            self._save_waveform_to_file(filename)
+            self._save_waveform_to_file(filename, fmt)
         d.Destroy()
 
     def on_host_select(self, event, scope):
@@ -355,6 +378,9 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             self.active_scope.remove_selected_source(source)
         else:
             self.active_scope.add_selected_source(source)
+
+    def on_waveform_fmt_select(self, event, fmt):
+        self.selected_waveform_fmt = fmt
 
     def on_left_down(self, event):
         self._copy_screenshot_to_clipboard()
