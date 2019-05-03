@@ -1,4 +1,7 @@
 
 class NotAliveError(Exception):
-    """Error on message decoding."""
+    pass
+
+
+class NoDataAvailable(Exception):
     pass

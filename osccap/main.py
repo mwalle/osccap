@@ -27,7 +27,7 @@ import wx.adv
 from functools import partial
 
 from osccap.config import ConfigSettings
-from osccap.errors import NotAliveError
+from osccap.errors import NotAliveError, NoDataAvailable
 from osccap.oscilloscope import create_oscilloscopes_from_config
 
 
@@ -336,6 +336,12 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                                       traceback.format_exc()))
                 self.ShowBallon('Error', 'Scope not alive. Cannot capture '
                                 'the waveform!',
+                                flags=wx.ICON_ERROR)
+            except NoDataAvailable:
+                logging.error('no waveform data available from {} {}'
+                              .format(self.active_scope.name,
+                                      traceback.format_exc()))
+                self.ShowBallon('Error', 'No waveform data available.',
                                 flags=wx.ICON_ERROR)
             except Exception as exc:
                 logging.error('cannot take waveform from {} {}'
