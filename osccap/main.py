@@ -20,6 +20,7 @@ import logging
 import numpy
 import os
 import sys
+import time
 import traceback
 import wx
 import wx.adv
@@ -103,8 +104,12 @@ def save_waveform_to_file(scope, filename, fmt):
             array = numpy.vstack((array, waveforms[source]))
             save_fmt.append('%.7e')
 
+        start_time = time.time()
         numpy.savetxt(filename, numpy.transpose(array),
                       delimiter=",", fmt=save_fmt)
+        logging.debug('save_waveform_to_file: {} save_time={}'
+                      .format(source, str(time.time() - start_time)))
+
 
     elif fmt == 'timed-separated':
         save_fmt = list()
@@ -117,8 +122,11 @@ def save_waveform_to_file(scope, filename, fmt):
             array = time_array
             array = numpy.vstack((array, waveforms[source]))
 
+            start_time = time.time()
             numpy.savetxt(save_filename, numpy.transpose(array),
                           delimiter=",", fmt=save_fmt)
+            logging.debug('save_waveform_to_file: {} save_time={}'
+                          .format(source, str(time.time() - start_time)))
 
 
 # There is only one configuration, create it
