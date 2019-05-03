@@ -60,7 +60,8 @@ def get_sources(model):
         raise NotImplementedError()
 
     SOURCES = [
-        'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4'
+        'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
+        'WMEMORY1', 'WMEMORY2', 'WMEMORY3', 'WMEMORY4'
     ]
     return SOURCES
 
