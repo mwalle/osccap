@@ -186,7 +186,7 @@ def _take_time_info(dev):
             2 - math.floor(math.log(delta_t,10))
     mantisse_time = str(mantisse_corner + mantisse_delta_t)
 
-    time_fmt = '%.{}e'.format(mantisse_time)
+    time_fmt = '{:.' + mantisse_time + 'e}'
 
     logging.debug('agilent: TIME t_start={} t_end={} delta_t={} time_format={}'
                   .format(t_start, t_end, delta_t, time_fmt))
