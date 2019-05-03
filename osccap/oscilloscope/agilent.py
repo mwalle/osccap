@@ -218,11 +218,11 @@ def _take_waveform(dev, active_sources):
     # Set waveform read format. ASCII, BYTE, WORD, BINARY
     dev.write(':WAVEFORM:FORMAT WORD')
 
-    (time_array, time_fmt) = _take_time_info(dev)
-
     waveforms = {}
     for source in [x for x in active_sources if x != 'TIME']:
         waveforms[source] = _take_waveform_from_source(dev, source)
+
+    (time_array, time_fmt) = _take_time_info(dev)
 
     return (time_array, time_fmt, waveforms)
 
