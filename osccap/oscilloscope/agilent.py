@@ -21,6 +21,8 @@ import numpy as np
 import time
 import vxi11
 
+from osccap.errors import NoDataAvailable
+
 
 #class Timeit(object):
 #    def __init__(self):
@@ -135,6 +137,11 @@ def _take_time_info(dev):
 
     dev.write(':WAVEFORM:XORIGIN?')
     t_start = float(dev.read())
+
+    logging.debug('points={} delta_t={} t_start={}'.format(points, delta_t, t_start))
+
+    if delta_t == 0.0:
+        raise NoDataAvailable()
 
     # round t_start accuracy to floor of delta_t
     # -> timebase is closer to zero
