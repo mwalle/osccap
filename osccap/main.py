@@ -91,18 +91,25 @@ def save_screenshot_to_file(scope, filename):
 
 
 def save_waveform_to_file(scope, filename, fmt):
-    (time_array, waveforms) = scope.take_waveform()
+    (time_array, time_fmt, waveforms) = scope.take_waveform()
 
     if fmt == 'timed':
+        save_fmt = list()
+
         array = time_array
+        save_fmt.append(time_fmt)
 
         for source in scope.selected_sources:
             array = numpy.vstack((array, waveforms[source]))
+            save_fmt.append('%.7e')
 
         numpy.savetxt(filename, numpy.transpose(array),
-                      delimiter=",", fmt='%.7e')
+                      delimiter=",", fmt=save_fmt)
 
     elif fmt == 'timed-separated':
+        save_fmt = list()
+        save_fmt.append(time_fmt)
+        save_fmt.append('%.7e')
 
         for source in scope.selected_sources:
 
@@ -111,7 +118,7 @@ def save_waveform_to_file(scope, filename, fmt):
             array = numpy.vstack((array, waveforms[source]))
 
             numpy.savetxt(save_filename, numpy.transpose(array),
-                          delimiter=",", fmt='%.7e')
+                          delimiter=",", fmt=save_fmt)
 
 
 # There is only one configuration, create it

@@ -133,9 +133,9 @@ def take_waveform(host, active_sources):
 
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
-    (time_array, waveform) = _take_waveform(dev, active_sources)
+    (time_array, time_fmt, waveform) = _take_waveform(dev, active_sources)
     dev.close()
-    return (time_array, waveform)
+    return (time_array, time_fmt, waveform)
 
 
 def _take_time_info(dev):
@@ -168,14 +168,14 @@ def _take_time_info(dev):
             2 - math.floor(math.log(delta_t,10))
     mantisse_time = str(mantisse_corner + mantisse_delta_t)
 
-    time_format = '{:.' + mantisse_time + 'e}'
+    time_fmt = '%.{}e'.format(mantisse_time)
 
     logging.debug('agilent: TIME t_start={} t_end={} delta_t={} time_format={}'
-                  .format(t_start, t_end, delta_t, time_format))
+                  .format(t_start, t_end, delta_t, time_fmt))
 
     time_array = np.arange(t_start, t_end, delta_t)
 
-    return time_array
+    return (time_array, time_fmt)
 
 
 def _take_waveform_from_source(dev, source):
@@ -217,13 +217,13 @@ def _take_waveform(dev, active_sources):
     # Set waveform read format. ASCII, BYTE, WORD, BINARY
     dev.write(':WAVEFORM:FORMAT WORD')
 
-    time_array = _take_time_info(dev)
+    (time_array, time_fmt) = _take_time_info(dev)
 
     waveforms = {}
     for source in [x for x in active_sources if x != 'TIME']:
         waveforms[source] = _take_waveform_from_source(dev, source)
 
-    return (time_array, waveforms)
+    return (time_array, time_fmt, waveforms)
 
 
 if __name__ == '__main__':
