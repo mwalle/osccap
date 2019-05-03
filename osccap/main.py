@@ -92,69 +92,74 @@ def save_screenshot_to_file(scope, filename):
 
 
 def save_waveform_to_file(scope, filename, fmt):
-    (time_array, time_fmt, waveforms) = scope.take_waveform()
+    
 
-    if fmt == 'combined':
-        save_fmt = list()
-
-        array = numpy.array(list(waveforms.values()))
-
+    if fmt == 'binary':
+        waveforms = scope.take_waveform('BINARY')
         for source in scope.selected_sources:
+            save_filename = filename.replace('.bin', '_{}.bin'.format(source))
+            with open(save_filename, 'wb') as f:
+                f.write(waveforms[source])
 
-            save_fmt.append('%.7e')
+    else:
+        (time_array, time_fmt, waveforms) = scope.take_waveform()
+        if fmt == 'combined':
+            save_fmt = list()
 
-        start_time = time.time()
-        numpy.savetxt(filename, numpy.transpose(array),
-                      delimiter=",", fmt=save_fmt)
-        logging.debug('save_waveform_to_file: {} save_time={}'
-                      .format(scope.selected_sources, 
-                      str(time.time() - start_time)))
+            array = numpy.array(list(waveforms.values()))
 
-    elif fmt == 'separated':
-
-        for source in scope.selected_sources:
-
-            save_filename = filename.replace('.csv', '_{}.csv'.format(source))
+            for source in scope.selected_sources:
+                save_fmt.append('%.7e')
 
             start_time = time.time()
-            numpy.savetxt(save_filename, waveforms[source],
-                          delimiter=",", fmt='%.7e')
+            numpy.savetxt(filename, numpy.transpose(array),
+                          delimiter=",", fmt=save_fmt)
             logging.debug('save_waveform_to_file: {} save_time={}'
-                          .format(source, str(time.time() - start_time)))
+                          .format(scope.selected_sources, 
+                          str(time.time() - start_time)))
 
-    elif fmt == 'timed-combined':
-        save_fmt = list()
+        elif fmt == 'separated':
 
-        array = time_array
-        save_fmt.append(time_fmt)
+            for source in scope.selected_sources:
+                save_filename = filename.replace('.csv', '_{}.csv'.format(source))
+                start_time = time.time()
+                numpy.savetxt(save_filename, waveforms[source],
+                              delimiter=",", fmt='%.7e')
+                logging.debug('save_waveform_to_file: {} save_time={}'
+                              .format(source, str(time.time() - start_time)))
 
-        for source in scope.selected_sources:
+        elif fmt == 'timed-combined':
+            save_fmt = list()
 
-            array = numpy.vstack((array, waveforms[source]))
-            save_fmt.append('%.7e')
-
-        start_time = time.time()
-        numpy.savetxt(filename, numpy.transpose(array),
-                      delimiter=",", fmt=save_fmt)
-        logging.debug('save_waveform_to_file: {} save_time={}'
-                      .format(source, str(time.time() - start_time)))
-
-    elif fmt == 'timed-separated':
-        save_fmt = list()
-        save_fmt.append(time_fmt)
-        save_fmt.append('%.7e')
-
-        for source in scope.selected_sources:
-
-            save_filename = filename.replace('.csv', '_{}.csv'.format(source))
             array = time_array
-            array = numpy.vstack((array, waveforms[source]))
+            save_fmt.append(time_fmt)
+        
+            for source in scope.selected_sources:
+                array = numpy.vstack((array, waveforms[source]))
+                save_fmt.append('%.7e')
 
             start_time = time.time()
-            numpy.savetxt(save_filename, numpy.transpose(array),
+            numpy.savetxt(filename, numpy.transpose(array),
                           delimiter=",", fmt=save_fmt)
             logging.debug('save_waveform_to_file: {} save_time={}'
                           .format(source, str(time.time() - start_time)))
+
+        elif fmt == 'timed-separated':
+            save_fmt = list()
+            save_fmt.append(time_fmt)
+            save_fmt.append('%.7e')
+
+            for source in scope.selected_sources:
+
+                save_filename = filename.replace('.csv', '_{}.csv'.format(source))
+                array = time_array
+                array = numpy.vstack((array, waveforms[source]))
+
+                start_time = time.time()
+                numpy.savetxt(save_filename, numpy.transpose(array),
+                              delimiter=",", fmt=save_fmt)
+                logging.debug('save_waveform_to_file: {} save_time={}'
+                              .format(source, str(time.time() - start_time)))
 
 
 # There is only one configuration, create it
@@ -412,8 +417,12 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         d.Destroy()
 
     def on_waveform_to_file(self, event, fmt):
-        d = wx.FileDialog(None, "Save to", wildcard="*.csv",
-                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        if fmt == 'binary':
+            d = wx.FileDialog(None, "Save to", wildcard="*.bin",
+                    style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        else:
+            d = wx.FileDialog(None, "Save to", wildcard="*.csv",
+                    style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
 
         if d.ShowModal() == wx.ID_OK:
             filename = os.path.join(d.GetDirectory(), d.GetFilename())
