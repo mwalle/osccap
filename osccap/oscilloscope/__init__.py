@@ -113,15 +113,3 @@ class Oscilloscope(object):
         else:
             raise NotImplementedError()
 
-    def take_binary_waveform(self):
-
-        if not self.is_alive():
-            raise NotAliveError()
-
-        self._update_manufacturer_model()
-
-        if self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.take_binary_waveform(self.host, self.selected_sources)
-        else:
-            raise NotImplementedError()
-
