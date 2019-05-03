@@ -107,6 +107,18 @@ def get_waveform_preamble(dev):
     preamble = preamble.replace('"', '').split(',')
 
 
+def get_source_display(dev, source):
+    """Get the display state of the source.
+
+    source can be CHANNEL<N>, WMEMORY<N>, FUNCTION<N>
+
+    Returns TRUE or FALSE
+    """
+    dev.write(':{}:DISPLAY?'.format(source))
+    display = dev.read_raw()[:-1].decode('utf-8')
+    return bool(int(display))
+
+
 def convert_waveform_data(bin_data, increment, offset):
     """Convert the values in the (numpy) array.
 
