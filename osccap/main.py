@@ -99,7 +99,8 @@ def save_waveform_to_file(scope, filename, fmt):
         for source in scope.selected_sources:
             array = numpy.vstack((array, waveforms[source]))
 
-        numpy.savetxt(filename, numpy.transpose(array), delimiter=",", fmt='%.7e')
+        numpy.savetxt(filename, numpy.transpose(array),
+                      delimiter=",", fmt='%.7e')
 
     elif fmt == 'timed-separated':
 
@@ -109,7 +110,8 @@ def save_waveform_to_file(scope, filename, fmt):
             array = time_array
             array = numpy.vstack((array, waveforms[source]))
 
-            numpy.savetxt(save_filename, numpy.transpose(array), delimiter=",", fmt='%.7e')
+            numpy.savetxt(save_filename, numpy.transpose(array),
+                          delimiter=",", fmt='%.7e')
 
 
 # There is only one configuration, create it
@@ -216,8 +218,8 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             if source in scope.get_selected_sources():
                 self.sources_menu.Check(id, True)
 
-
-        logging.info('select sources {}'.format(self.active_scope.get_selected_sources()))
+        logging.info('select sources {}'
+                     .format(self.active_scope.get_selected_sources()))
 
     def CreatePopupMenu(self):
         menu = wx.Menu()
@@ -231,7 +233,9 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
         menu.AppendSeparator()
         item = wx.MenuItem(menu, ID_WAVEFORM_TO_FILE, 'Waveform to file..')
-        menu.Bind(wx.EVT_MENU, partial(self.on_waveform_to_file, fmt=self.selected_waveform_fmt), id=item.GetId())
+        menu.Bind(wx.EVT_MENU, partial(self.on_waveform_to_file,
+                                       fmt=self.selected_waveform_fmt),
+                  id=item.GetId())
         menu.Append(item)
         menu_waveform_format = wx.Menu()
         menu.Append(wx.ID_ANY, 'Waveform Format', menu_waveform_format)
@@ -331,7 +335,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.set_tray_icon(busy=True)
                 save_waveform_to_file(self.active_scope, filename, fmt)
             except NotAliveError:
-                logging.error('cannot take screenshot from {} {}'
+                logging.error('cannot take waveform from {} {}'
                               .format(self.active_scope.name,
                                       traceback.format_exc()))
                 self.ShowBallon('Error', 'Scope not alive. Cannot capture '
