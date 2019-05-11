@@ -110,6 +110,7 @@ class Oscilloscope(object):
 
         if self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
             return agilent.take_waveform(self.host, self.selected_sources, format)
+        elif self.manufacturer == 'TEKTRONIX':
+            return tektronix.take_waveform(self.host, self.model, self.selected_sources)
         else:
             raise NotImplementedError()
-

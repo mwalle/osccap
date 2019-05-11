@@ -38,9 +38,14 @@ def get_sources(model):
 
     if model in ['MSO58']:
         SOURCES = [
-            'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
-            'CHANNEL5', 'CHANNEL6', 'CHANNEL7', 'CHANNEL8',
-            'FUNCTION1', 'FUNCTION2', 'FUNCTION3', 'FUNCTION4'
+            'CH1', 'CH2', 'CH3', 'CH4',
+            'CH5', 'CH6', 'CH7', 'CH8',
+            'MATH1', 'MATH2', 'MATH3', 'MATH4'
+        ]
+    if model in ['MSO64']:
+        SOURCES = [
+            'CH1', 'CH2', 'CH3', 'CH4',
+            'MATH1', 'MATH2', 'MATH3', 'MATH4'
         ]
     else:
         SOURCES = [
@@ -99,3 +104,36 @@ def take_screenshot(host, model, fullscreen=True, image_format='png'):
     dev.close()
 
     return img_data
+
+def take_waveform(host, model, active_sources):
+    import vxi11
+
+    dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
+    dev.open()
+    dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
+    dev.open()
+    dev.io_timeout = 10
+
+    if model in ['TDS5104', 'TDS7704']:
+        raise('not supported')
+
+    elif model in ['MSO54', 'MSO56', 'MSO58', 'MSO64']:
+
+        waveforms = {}
+        for source in active_sources:
+            dev.write('SAVE:WAVEFORM {},"waveform.wfm"'.format(source))
+            dev.write('*OPC?')
+
+            while '1' not in dev.read():
+                time.sleep(0.01)
+                save_time += 1
+                dev.write('*OPC?')
+                if save_time > 10000:
+                    raise Exception('save waveform takes longer than 10 seconds')
+
+            dev.write(r'FILESYSTEM:READFILE "waveform.wfm"')
+            waveforms[source] = dev.read_raw()
+            dev.write(r'FILESYSTEM:DELETE "waveform.wfm"')
+
+    dev.close()
+    return waveforms
