@@ -73,24 +73,6 @@ TRAY_ICON_BUSY = os.path.join(DATA_PATH, 'osccap-busy-16.png')
 TRAY_TOOLTIP = 'OscCap v%s' % __version__
 
 
-def copy_screenshot_to_clipboard(scope):
-    wx.InitAllImageHandlers()
-    screen = scope.take_screenshot()
-    stream = io.BytesIO(screen)
-    bmp = wx.Bitmap(wx.Image(stream))
-    cbbmp = wx.BitmapDataObject(bmp)
-    if wx.TheClipboard.Open():
-        wx.TheClipboard.SetData(cbbmp)
-        wx.TheClipboard.Close()
-
-
-def save_screenshot_to_file(scope, filename):
-    screen = scope.take_screenshot()
-
-    with open(filename, 'wb') as f:
-        f.write(screen)
-
-
 def save_waveform_to_file(scope, filename, fmt):
     
 
@@ -332,11 +314,13 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
         return menu
 
-    def _copy_screenshot_to_clipboard(self):
+    def _get_screenshot(self):
+        screenshot = None
+
         if self.active_scope:
             try:
                 self.set_tray_icon(busy=True)
-                copy_screenshot_to_clipboard(self.active_scope)
+                screenshot = self.active_scope.take_screenshot()
             except NotAliveError:
                 logging.error('cannot take screenshot from {} {}'
                               .format(self.active_scope.name,
@@ -355,27 +339,26 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             finally:
                 self.set_tray_icon(busy=False)
 
+        return screenshot
+
+    def _copy_screenshot_to_clipboard(self):
+        screenshot = self._get_screenshot()
+
+        if screenshot is not None:
+            wx.InitAllImageHandlers()
+            stream = io.BytesIO(screenshot)
+            bmp = wx.Bitmap(wx.Image(stream))
+            cbbmp = wx.BitmapDataObject(bmp)
+            if wx.TheClipboard.Open():
+                wx.TheClipboard.SetData(cbbmp)
+                wx.TheClipboard.Close()
+
     def _save_screenshot_to_file(self, filename):
-        if self.active_scope:
-            try:
-                self.set_tray_icon(busy=True)
-                save_screenshot_to_file(self.active_scope, filename)
-            except NotAliveError:
-                logging.error('cannot take screenshot from {} {}'
-                              .format(self.active_scope.name,
-                                      traceback.format_exc()))
-                self.ShowBallon('Error', 'Scope not alive. Cannot capture '
-                                'the screenshot!',
-                                flags=wx.ICON_ERROR)
-            except Exception as exp:
-                logging.error('cannot take screenshot from {} {}'
-                              .format(self.active_scope.name,
-                                      traceback.format_exc()))
-                self.ShowBallon('Unknown Error while taking screenshot',
-                                traceback.format_exc(),
-                                flags=wx.ICON_ERROR)
-            finally:
-                self.set_tray_icon(busy=False)
+        screenshot = self._get_screenshot()
+
+        if screenshot is not None:
+            with open(filename, 'wb') as f:
+                f.write(screenshot)
 
     def _save_waveform_to_file(self, filename, fmt):
         if self.active_scope:
