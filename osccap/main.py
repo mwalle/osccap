@@ -293,7 +293,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                                                     scope.get_manufacturer(),
                                                     scope.get_model()))
                 self.Bind(wx.EVT_MENU,
-                          partial(self.on_host_select, scope=scope),
+                          partial(self.on_scope_select, scope=scope),
                           item)
                 if scope == self.active_scope:
                     menu.Check(id, True)
@@ -412,7 +412,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             self._save_waveform_to_file(filename, fmt)
         d.Destroy()
 
-    def on_host_select(self, event, scope):
+    def on_scope_select(self, event, scope):
         logging.info('select scope {}'.format(scope))
         self.active_scope = scope
 
