@@ -104,8 +104,7 @@ def take_screenshot(host, model, fullscreen=True, image_format='png'):
 
     return img_data
 
-def take_waveform(host, model, active_sources):
-    import vxi11
+def take_waveform(host, model, active_sources, waveform_format=None):
 
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
