@@ -186,14 +186,13 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
         self.oscilloscopes = oscilloscopes
 
+        self.frame = wx.Frame(None, -1)
+
         # just for global hotkey binding
         if on_win and config.hotkey is not None:
-            self.frame = wx.Frame(None, -1)
             self.frame.RegisterHotKey(ID_HOTKEY, config.hotkey.modifiers,
                                       config.hotkey.keycode)
             self.frame.Bind(wx.EVT_HOTKEY, self.on_to_clipboard, id=ID_HOTKEY)
-        else:
-            self.frame = None
 
     # from http://stackoverflow.com/questions/7523511
     def ShowBallon(self, title, text, msec=0, flags=0):
