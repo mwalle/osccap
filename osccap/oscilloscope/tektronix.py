@@ -36,24 +36,23 @@ def get_source_list(host):
 
 def get_sources(model):
 
-    if model in ['MSO58']:
-        SOURCES = [
-            'CH1', 'CH2', 'CH3', 'CH4',
-            'CH5', 'CH6', 'CH7', 'CH8',
-            'MATH1', 'MATH2', 'MATH3', 'MATH4'
-        ]
-    if model in ['MSO64']:
-        SOURCES = [
-            'CH1', 'CH2', 'CH3', 'CH4',
-            'MATH1', 'MATH2', 'MATH3', 'MATH4'
-        ]
-    else:
-        SOURCES = [
+    try:
+        sources = {
+            'MSO58':
+                ['CH1', 'CH2', 'CH3', 'CH4',
+                 'CH5', 'CH6', 'CH7', 'CH8',
+                 'MATH1', 'MATH2', 'MATH3', 'MATH4'],
+            'MSO64':
+                ['CH1', 'CH2', 'CH3', 'CH4',
+                 'MATH1', 'MATH2', 'MATH3', 'MATH4']
+        }[model]
+    except KeyError:
+        sources = [
             'CHANNEL1', 'CHANNEL2', 'CHANNEL3', 'CHANNEL4',
             'FUNCTION1', 'FUNCTION2', 'FUNCTION3', 'FUNCTION4'
         ]
 
-    return SOURCES
+    return sources
 
 
 def take_screenshot(host, model, fullscreen=True, image_format='png'):
