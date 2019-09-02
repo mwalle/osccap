@@ -319,8 +319,9 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
         menu.AppendSeparator()
         self.sources_menu = wx.Menu()
-        self._update_sources_menu_for_scope(self.active_scope)
-        menu.Append(wx.ID_ANY, 'Select Source', self.sources_menu)
+        if self.active_scope:
+            self._update_sources_menu_for_scope(self.active_scope)
+            menu.Append(wx.ID_ANY, 'Select Source', self.sources_menu)
 
         menu.AppendSeparator()
         item = wx.MenuItem(menu, wx.ID_ABOUT, 'About..')
