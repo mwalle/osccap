@@ -345,7 +345,6 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         screenshot = self._get_screenshot()
 
         if screenshot is not None:
-            wx.InitAllImageHandlers()
             stream = io.BytesIO(screenshot)
             bmp = wx.Bitmap(wx.Image(stream))
             cbbmp = wx.BitmapDataObject(bmp)
