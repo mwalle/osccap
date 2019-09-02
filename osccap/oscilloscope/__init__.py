@@ -22,9 +22,6 @@ class Oscilloscope(object):
     _manufacturer = None
     _model = None
 
-    OSC_TYPE_TEKTRONIX_TDS = 0
-    OSC_TYPE_AGILENT = 1
-
     def __init__(self, host, name):
         self.host = host
         self.name = name
