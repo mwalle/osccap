@@ -105,7 +105,7 @@ class Oscilloscope(object):
             logging.warning('unsupported scope {}'.format(self._manufacturer))
             raise NotImplementedError()
 
-    def take_waveform(self, format='ASCII'):
+    def take_waveform(self, waveform_format='ASCII'):
 
         if not self.is_alive():
             raise NotAliveError()
@@ -113,9 +113,14 @@ class Oscilloscope(object):
         self._update_manufacturer_model()
 
         if self._manufacturer == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.take_waveform(self.host, self.selected_sources, format)
+            return agilent.take_waveform(self.host,
+                                         self._model,
+                                         self.selected_sources,
+                                         waveform_format=waveform_format)
         elif self._manufacturer == 'TEKTRONIX':
-            return tektronix.take_waveform(self.host, self.model, self.selected_sources)
+            return tektronix.take_waveform(self.host,
+                                           self._model,
+                                           self.selected_sources)
         else:
             logging.warning('unsupported scope {}'.format(self._manufacturer))
             raise NotImplementedError()

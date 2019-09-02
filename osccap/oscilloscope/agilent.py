@@ -133,17 +133,16 @@ def convert_waveform_data(bin_data, increment, offset):
     return np.multiply(bin_data, increment) + offset
 
 
-def take_waveform(host, active_sources, format='ASCII'):
-    import vxi11
+def take_waveform(host, model, active_sources, waveform_format='ASCII'):
 
     dev = vxi11.Instrument("TCPIP::" + host + "::INSTR")
     dev.open()
-    if format == 'ASCII':
+    if waveform_format == 'ASCII':
         # waveforms is tuple of 
         # (time_array, time_fmt, waveforms[sources]) here:
         waveforms = _take_waveform(dev, active_sources)
 
-    elif format == 'BINARY':
+    elif waveform_format == 'BINARY':
         dev.write(':WAVEFORM:FORMAT BINARY')
 
         waveforms = {}
