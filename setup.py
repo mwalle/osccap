@@ -15,6 +15,10 @@ def main():
                     {'install_script': 'osccap_postinstall.py',
                     },
             },
+            install_requires = [
+                'wxpython',
+                'numpy'
+            ],
             packages = find_packages(),
             package_data = {'osccap': ['data/*.png', 'data/osccap.ico']},
             #scripts = ['osccap.py', 'osccap_postinstall.py'],
