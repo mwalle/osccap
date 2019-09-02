@@ -19,8 +19,8 @@ class Oscilloscope(object):
     host = None
     name = None
 
-    manufacturer = None
-    model = None
+    _manufacturer = None
+    _model = None
 
     OSC_TYPE_TEKTRONIX_TDS = 0
     OSC_TYPE_AGILENT = 1
@@ -35,7 +35,13 @@ class Oscilloscope(object):
 
     def _update_manufacturer_model(self):
         """For legacy purpose we update the type."""
-        (self.manufacturer, self.model) = self.get_idn()[0:2]
+        (self._manufacturer, self._model) = self.get_idn()[0:2]
+
+    def get_manufacturer(self):
+        return self._manufacturer
+
+    def get_model(self):
+        return self._model
 
     def is_alive(self, timeout=0.1):
         """Check if the oscilloscope's network connection is alive."""
@@ -79,12 +85,12 @@ class Oscilloscope(object):
 
         self._update_manufacturer_model()
 
-        if self.manufacturer == 'TEKTRONIX':
-            return tektronix.get_sources(self.model)
-        elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.get_sources(self.model)
+        if self._manufacturer == 'TEKTRONIX':
+            return tektronix.get_sources(self._model)
+        elif self._manufacturer == 'KEYSIGHT TECHNOLOGIES':
+            return agilent.get_sources(self._model)
         else:
-            logging.warning('unsupported scope {}'.format(self.manufacturer))
+            logging.warning('unsupported scope {}'.format(self._manufacturer))
             return DEFAULT_CHANNELS
 
     def take_screenshot(self, fullscreen=True, image_format='png'):
@@ -94,12 +100,12 @@ class Oscilloscope(object):
 
         self._update_manufacturer_model()
 
-        if self.manufacturer == 'TEKTRONIX':
-            return tektronix.take_screenshot(self.host, self.model)
-        elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.take_screenshot(self.host, self.model)
+        if self._manufacturer == 'TEKTRONIX':
+            return tektronix.take_screenshot(self.host, self._model)
+        elif self._manufacturer == 'KEYSIGHT TECHNOLOGIES':
+            return agilent.take_screenshot(self.host, self._model)
         else:
-            logging.warning('unsupported scope {}'.format(self.manufacturer))
+            logging.warning('unsupported scope {}'.format(self._manufacturer))
             raise NotImplementedError()
 
     def take_waveform(self, format='ASCII'):
@@ -109,10 +115,10 @@ class Oscilloscope(object):
 
         self._update_manufacturer_model()
 
-        if self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
+        if self._manufacturer == 'KEYSIGHT TECHNOLOGIES':
             return agilent.take_waveform(self.host, self.selected_sources, format)
-        elif self.manufacturer == 'TEKTRONIX':
+        elif self._manufacturer == 'TEKTRONIX':
             return tektronix.take_waveform(self.host, self.model, self.selected_sources)
         else:
-            logging.warning('unsupported scope {}'.format(self.manufacturer))
+            logging.warning('unsupported scope {}'.format(self._manufacturer))
             raise NotImplementedError()

@@ -290,8 +290,8 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 id = wx.NewIdRef(count=1)
                 item = menu.AppendCheckItem(id, '{} - {} {}'
                                             .format(scope.name,
-                                                    scope.manufacturer,
-                                                    scope.model))
+                                                    scope.get_manufacturer(),
+                                                    scope.get_model()))
                 self.Bind(wx.EVT_MENU,
                           partial(self.on_host_select, scope=scope),
                           item)
