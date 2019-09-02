@@ -44,6 +44,7 @@ class Oscilloscope(object):
                 sock.settimeout(timeout)
                 sock.connect((self.host, 111))
         except socket.timeout:
+            logging.warning('scope {} is not alive'.format(self))
             return False
 
         return True
@@ -74,7 +75,6 @@ class Oscilloscope(object):
         DEFAULT_CHANNELS = []
 
         if not self.is_alive():
-            logging.warning('scope {} is not alive'.format(self))
             return DEFAULT_CHANNELS
 
         self._update_manufacturer_model()
@@ -84,7 +84,7 @@ class Oscilloscope(object):
         elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
             return agilent.get_sources(self.model)
         else:
-            logging.warning('unknown scope type {}'.format(self.type))
+            logging.warning('unsupported scope {}'.format(self.manufacturer))
             return DEFAULT_CHANNELS
 
     def take_screenshot(self, fullscreen=True, image_format='png'):
@@ -99,6 +99,7 @@ class Oscilloscope(object):
         elif self.manufacturer == 'KEYSIGHT TECHNOLOGIES':
             return agilent.take_screenshot(self.host, self.model)
         else:
+            logging.warning('unsupported scope {}'.format(self.manufacturer))
             raise NotImplementedError()
 
     def take_waveform(self, format='ASCII'):
@@ -113,4 +114,5 @@ class Oscilloscope(object):
         elif self.manufacturer == 'TEKTRONIX':
             return tektronix.take_waveform(self.host, self.model, self.selected_sources)
         else:
+            logging.warning('unsupported scope {}'.format(self.manufacturer))
             raise NotImplementedError()
