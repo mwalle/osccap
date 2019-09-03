@@ -47,7 +47,6 @@ class Oscilloscope(object):
                 sock.settimeout(timeout)
                 sock.connect((self.host, 111))
         except socket.timeout:
-            logging.warning('scope {} is not alive'.format(self))
             return False
 
         return True
