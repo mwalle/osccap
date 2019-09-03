@@ -322,9 +322,6 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.set_tray_icon(busy=True)
                 screenshot = self.active_scope.take_screenshot()
             except NotAliveError:
-                logging.error('cannot take screenshot from {} {}'
-                              .format(self.active_scope.name,
-                                      traceback.format_exc()))
                 self.ShowBallon('Error', 'Scope not alive. Cannot capture '
                                 'the screenshot!',
                                 flags=wx.ICON_ERROR)
@@ -365,9 +362,6 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 self.set_tray_icon(busy=True)
                 save_waveform_to_file(self.active_scope, filename, fmt)
             except NotAliveError:
-                logging.error('cannot take waveform from {} {}'
-                              .format(self.active_scope.name,
-                                      traceback.format_exc()))
                 self.ShowBallon('Error', 'Scope not alive. Cannot capture '
                                 'the waveform!',
                                 flags=wx.ICON_ERROR)
