@@ -19,7 +19,9 @@ import io
 import logging
 import numpy
 import os
+import socket
 import sys
+import threading
 import time
 import traceback
 import wx
@@ -69,12 +71,28 @@ except ImportError:
 
 ICON = os.path.join(DATA_PATH, 'osccap-64.png')
 TRAY_ICON = os.path.join(DATA_PATH, 'osccap-16.png')
+TRAY_ICON_READY = os.path.join(DATA_PATH, 'osccap-ready-16.png')
 TRAY_ICON_BUSY = os.path.join(DATA_PATH, 'osccap-busy-16.png')
 TRAY_TOOLTIP = 'OscCap v%s' % __version__
 
 
+def call_repeatedly(interval, func, *args):
+    stopped = threading.Event()
+
+    def loop():
+        # the first call is in `interval` secs
+        while not stopped.wait(interval):
+            try:
+                func(*args)
+            except socket.timeout:
+                pass
+
+    t = threading.Thread(target=loop)
+    t.daemon = True
+    t.start()
+
+
 def save_waveform_to_file(scope, filename, fmt):
-    
 
     if fmt == 'binary':
         waveforms = scope.take_waveform('BINARY')
@@ -158,13 +176,16 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     selected_waveform_fmt = 'timed-separated'
 
     def __init__(self, oscilloscopes):
+        self.busy = False
+        self.ready = False
+
         wx.adv.TaskBarIcon.__init__(self)
-        self.set_tray_icon(busy=False)
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
+        self.set_tray_icon(busy=False, ready=False)
 
         for scope in oscilloscopes:
             if scope.name == config.active_scope_name:
-                self.active_scope = scope
+                self._set_active_scope(scope)
 
         self.oscilloscopes = oscilloscopes
 
@@ -226,14 +247,18 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                 raise Exception('Icon window not found')
         return self._chwnd
 
-    def set_tray_icon(self, busy):
-        self.busy = busy
+    def set_tray_icon(self, busy=None, ready=None):
+        if busy is not None:
+            self.busy = busy
+        if ready is not None:
+            self.ready = ready
 
-        self.icon = wx.Icon()
-        if not self.busy:
-            wx.Icon.CopyFromBitmap(self.icon, wx.Bitmap(TRAY_ICON))
+        if self.busy:
+            self.icon = wx.Icon(TRAY_ICON_BUSY)
         else:
-            wx.Icon.CopyFromBitmap(self.icon, wx.Bitmap(TRAY_ICON_BUSY))
+            path = TRAY_ICON_READY if self.ready else TRAY_ICON
+            self.icon = wx.Icon(path)
+
         self.SetIcon(self.icon, TRAY_TOOLTIP)
 
     def _update_sources_menu_for_scope(self, scope):
@@ -381,6 +406,11 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             finally:
                 self.set_tray_icon(busy=False)
 
+    def _set_active_scope(self, scope):
+        self.active_scope = scope
+        self.check_scope_ready()
+        call_repeatedly(5, self.check_scope_ready)
+
     def on_to_clipboard(self, event):
         self._copy_screenshot_to_clipboard()
 
@@ -393,21 +423,19 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         d.Destroy()
 
     def on_waveform_to_file(self, event, fmt):
-        if fmt == 'binary':
-            d = wx.FileDialog(None, "Save to", wildcard="*.bin",
-                    style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-        else:
-            d = wx.FileDialog(None, "Save to", wildcard="*.csv",
-                    style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        wildcard = '*.bin' if fmt == 'binary' else '*.cvs'
+        d = wx.FileDialog(None, "Save to", wildcard=wildcard,
+                          style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
 
         if d.ShowModal() == wx.ID_OK:
             filename = os.path.join(d.GetDirectory(), d.GetFilename())
             self._save_waveform_to_file(filename, fmt)
+
         d.Destroy()
 
     def on_scope_select(self, event, scope):
         logging.info('select scope {}'.format(scope))
-        self.active_scope = scope
+        self._set_active_scope(scope)
 
     def on_source_select(self, event, source):
         logging.info('select source {}'.format(source))
@@ -416,6 +444,10 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
             self.active_scope.remove_selected_source(source)
         else:
             self.active_scope.add_selected_source(source)
+
+    def check_scope_ready(self):
+        ready = True if self.active_scope.is_alive() else False
+        self.set_tray_icon(ready=ready)
 
     def on_waveform_fmt_select(self, event, fmt):
         self.selected_waveform_fmt = fmt
