@@ -42,7 +42,11 @@ else:
     on_win = False
 
 
-__version__ = '0.3'
+try:
+    from osccap.version import __version__
+except ImportError:
+    __version__ = 'dev'
+
 
 __description__ = """OscCap is a small utility to capture screenshots from
 various digial oscilloscopes. Screenshots can either be copied to the clipboard
