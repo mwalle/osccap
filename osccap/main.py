@@ -76,22 +76,6 @@ TRAY_ICON_BUSY = os.path.join(DATA_PATH, 'osccap-busy-16.png')
 TRAY_TOOLTIP = 'OscCap v%s' % __version__
 
 
-def call_repeatedly(interval, func, *args):
-    stopped = threading.Event()
-
-    def loop():
-        # the first call is in `interval` secs
-        while not stopped.wait(interval):
-            try:
-                func(*args)
-            except socket.timeout:
-                pass
-
-    t = threading.Thread(target=loop)
-    t.daemon = True
-    t.start()
-
-
 def save_waveform_to_file(scope, filename, fmt):
 
     if fmt == 'binary':
@@ -115,8 +99,8 @@ def save_waveform_to_file(scope, filename, fmt):
             numpy.savetxt(filename, numpy.transpose(array),
                           delimiter=",", fmt=save_fmt)
             logging.debug('save_waveform_to_file: {} save_time={}'
-                          .format(scope.selected_sources, 
-                          str(time.time() - start_time)))
+                          .format(scope.selected_sources,
+                                  str(time.time() - start_time)))
 
         elif fmt == 'separated':
 
@@ -174,6 +158,18 @@ ID_WAVEFORM_TO_FILE = wx.NewIdRef(count=1)
 class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     active_scope = None
     selected_waveform_fmt = 'timed-separated'
+
+    class CheckThread(threading.Thread):
+        def __init__(self, wxObject, interval):
+            self.wxObject = wxObject
+            self.interval = interval
+            threading.Thread.__init__(self)
+            self.start()
+
+        def run(self):
+            while True:
+                self.wxObject.check_scope_ready()
+                time.sleep(self.interval)
 
     def __init__(self, oscilloscopes):
         self.busy = False
@@ -408,8 +404,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
     def _set_active_scope(self, scope):
         self.active_scope = scope
-        self.check_scope_ready()
-        call_repeatedly(5, self.check_scope_ready)
+        self.CheckThread(self, interval=5)
 
     def on_to_clipboard(self, event):
         self._copy_screenshot_to_clipboard()
