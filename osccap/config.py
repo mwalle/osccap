@@ -6,21 +6,21 @@ import sys
 
 from collections import namedtuple
 
-
-
-on_win = None
-
 if sys.platform.startswith('win'):
     import winreg
-    on_win = True
 else:
     from configparser import SafeConfigParser
     import configparser
-    on_win = False
-
 
 OscProperties = namedtuple('OscProperties', 'name host')
 HotKey = namedtuple('HotKey', 'modifiers keycode')
+
+
+def get_configuration():
+    if sys.platform.startswith('win'):
+        return ConfigSettingsWindows()
+    else:
+        return ConfigSettingsLinux()
 
 
 class ConfigSettings(object):
@@ -30,16 +30,15 @@ class ConfigSettings(object):
         self.hotkey = None
 
     def load(self):
-        if on_win:
-            self.load_from_win_registry()
-        else:
-            self.load_from_dot_config()
+        pass
 
     def save(self):
-        if on_win:
-            self.save_to_win_registry()
-        else:
-            self.save_to_dot_config()
+        pass
+
+
+class ConfigSettingsWindows(ConfigSettings):
+    def __init__(self):
+        super(ConfigSettingsWindows, self).__init__()
 
     def _try_query_value(self, k, value_name, default):
         try:
@@ -47,7 +46,7 @@ class ConfigSettings(object):
         except WindowsError:
             return default
 
-    def load_from_win_registry(self):
+    def load(self):
         # load scope definitions
         try:
             key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
@@ -92,7 +91,7 @@ class ConfigSettings(object):
                                                            'LastActiveName',
                                                            self.scopes[0].name)
 
-    def save_to_win_registry(self):
+    def save(self):
         # save common program properties
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'SOFTWARE\OscCap',
                              0, winreg.KEY_WRITE)
@@ -100,7 +99,13 @@ class ConfigSettings(object):
                           self.active_scope_name)
         winreg.CloseKey(key)
 
-    def load_from_dot_config(self):
+
+class ConfigSettingsLinux(ConfigSettings):
+    def __init__(self):
+        super(ConfigSettingsLinux, self).__init__()
+        self.filename = os.path.expanduser('~/.osccaprc')
+
+    def load(self):
         """ Load the configuration from a ini style configuration file.
 
         e.g.
@@ -139,7 +144,7 @@ class ConfigSettings(object):
                     pass
         self.scopes.sort(key=lambda e: e.name)
 
-    def save_to_dot_config(self):
+    def save(self):
         filename = os.path.expanduser('~/.osccaprc')
         parser = SafeConfigParser()
         fd = open(filename, 'r')
@@ -158,7 +163,7 @@ class ConfigSettings(object):
 
 if __name__ == '__main__':
     print('load config')
-    config = ConfigSettings()
+    config = get_configuration()
     config.load()
     print(config.scopes)
     print(config.active_scope_name)
