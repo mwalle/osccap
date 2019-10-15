@@ -29,7 +29,7 @@ import wx.adv
 
 from functools import partial
 
-from osccap.config import ConfigSettings
+from osccap.config import get_configuration
 from osccap.errors import NotAliveError, NoDataAvailable
 from osccap.oscilloscope import create_oscilloscopes_from_config
 
@@ -151,7 +151,7 @@ def save_waveform_to_file(scope, filename, fmt):
 
 
 # There is only one configuration, create it
-config = ConfigSettings()
+config = get_configuration()
 
 ID_HOTKEY = wx.NewIdRef(count=1)
 ID_TO_CLIPBOARD = wx.NewIdRef(count=1)
