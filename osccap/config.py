@@ -111,7 +111,7 @@ class ConfigSettingsLinux(ConfigSettings):
         e.g.
 
         [global]
-        last_active_scope = 2
+        last_active_name = osc01
 
         [scope_osc01]
         host=osc1
@@ -128,7 +128,7 @@ class ConfigSettingsLinux(ConfigSettings):
             return
 
         try:
-            self.active_scope_name = parser.get('global', 'last_active_host')
+            self.active_scope_name = parser.get('global', 'last_active_name')
         except configparser.NoSectionError:
             pass
         except configparser.NoOptionError:
