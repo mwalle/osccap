@@ -9,7 +9,7 @@ from collections import namedtuple
 if sys.platform.startswith('win'):
     import winreg
 else:
-    from configparser import SafeConfigParser
+    from configparser import ConfigParser
     import configparser
 
 OscProperties = namedtuple('OscProperties', 'name host')
@@ -119,11 +119,10 @@ class ConfigSettingsLinux(ConfigSettings):
         [scope_osc02]
         host=osc2
         """
-        filename = os.path.expanduser('~/.osccaprc')
-        parser = SafeConfigParser()
+        parser = ConfigParser()
 
         try:
-            parser.readfp(open(filename, 'r'))
+            parser.read(self.filename)
         except IOError:
             return
 
@@ -145,10 +144,8 @@ class ConfigSettingsLinux(ConfigSettings):
         self.scopes.sort(key=lambda e: e.name)
 
     def save(self):
-        filename = os.path.expanduser('~/.osccaprc')
-        parser = SafeConfigParser()
-        fd = open(filename, 'r')
-        parser.readfp(fd)
+        parser = ConfigParser()
+        parser.read(self.filename)
 
         try:
             parser.add_section('global')
@@ -156,15 +153,15 @@ class ConfigSettingsLinux(ConfigSettings):
             pass
 
         parser.set('global', 'last_active_name', str(self.active_scope_name))
-        fd = open(filename + '~', 'w')
-        parser.write(fd)
-        os.rename(filename + '~', filename)
+        with open(self.filename, 'w') as configfile:
+            parser.write(configfile)
 
 
 if __name__ == '__main__':
-    print('load config')
     config = get_configuration()
     config.load()
     print(config.scopes)
     print(config.active_scope_name)
     print(config.hotkey)
+    print(config.active_scope_name)
+    config.save()
