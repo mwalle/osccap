@@ -9,10 +9,10 @@ clipboard or saved to a file.
 
 * Keysight Technologies DSOX91604A
 * Tektronix TDS5104
-* Tektronix TDS7704
+* Tektronix TDS7704B
 * Tektronix MSO58
 * Tektronix MSO56
-* Tektronix MSO58
+* Tektronix MSO68
 * Tektronix MSO64
 
 
