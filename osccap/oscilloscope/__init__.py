@@ -33,7 +33,7 @@ class Oscilloscope(object):
     def _update_manufacturer_model(self):
         """For legacy purpose we update the type."""
         try:
-            idn = self.get_idn()[0:2]
+            (self._manufacturer, self._model) = self.get_idn()[0:2]
         except Exception as e:
             pass
 
