@@ -305,7 +305,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         menu.AppendSeparator()
         if len(self.oscilloscopes) == 0:
             item = wx.MenuItem(menu, -1, 'No scopes')
-            menu.AppendCheckItem(item)
+            menu.Append(item)
             menu.Enable(item.GetId(), False)
             menu.Enable(ID_TO_CLIPBOARD, False)
             menu.Enable(ID_TO_FILE, False)
