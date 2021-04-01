@@ -38,9 +38,13 @@ class Oscilloscope(object):
             pass
 
     def get_manufacturer(self):
+        if self.is_alive() and self._manufacturer == None:
+            self._update_manufacturer_model()
         return self._manufacturer
 
     def get_model(self):
+        if self.is_alive() and self._model == None:
+            self._update_manufacturer_model()
         return self._model
 
     def is_alive(self, timeout=0.1):
@@ -82,11 +86,9 @@ class Oscilloscope(object):
         if not self.is_alive():
             return DEFAULT_CHANNELS
 
-        self._update_manufacturer_model()
-
-        if self._manufacturer == 'TEKTRONIX':
+        if self.get_manufacturer() == 'TEKTRONIX':
             return tektronix.get_sources(self._model)
-        elif self._manufacturer == 'KEYSIGHT TECHNOLOGIES':
+        elif self.get_manufacturer() == 'KEYSIGHT TECHNOLOGIES':
             return agilent.get_sources(self._model)
         else:
             logging.warning('unsupported scope {}'.format(self._manufacturer))
@@ -97,11 +99,9 @@ class Oscilloscope(object):
         if not self.is_alive():
             raise NotAliveError()
 
-        self._update_manufacturer_model()
-
-        if self._manufacturer == 'TEKTRONIX':
+        if self.get_manufacturer() == 'TEKTRONIX':
             return tektronix.take_screenshot(self.host, self._model)
-        elif self._manufacturer == 'KEYSIGHT TECHNOLOGIES':
+        elif self.get_manufacturer() == 'KEYSIGHT TECHNOLOGIES':
             return agilent.take_screenshot(self.host, self._model)
         else:
             logging.warning('unsupported scope {}'.format(self._manufacturer))
