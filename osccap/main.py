@@ -121,7 +121,7 @@ def save_waveform_to_file(scope, filename, fmt):
 
             array = time_array
             save_fmt.append(time_fmt)
-        
+
             for source in scope.selected_sources:
                 array = numpy.vstack((array, waveforms[source]))
                 save_fmt.append('%.7e')
@@ -159,37 +159,69 @@ ID_TO_FILE = wx.NewIdRef(count=1)
 ID_WAVEFORM_TO_FILE = wx.NewIdRef(count=1)
 
 
+EVT_RESULT_ID = wx.ID_ANY
+
+def EVT_RESULT(win, func):
+    """Define Result Event."""
+    win.Connect(-1, -1, EVT_RESULT_ID, func)
+
+
+class ScopeAliveEvent(wx.PyEvent):
+    """Simple event to carry arbitrary result data."""
+    def __init__(self, scope, alive):
+        """Init Result Event."""
+        wx.PyEvent.__init__(self)
+        self.SetEventType(EVT_RESULT_ID)
+        self.data = scope
+        self.scope = scope
+        self.alive = alive
+
+
+class CheckScopeThread(threading.Thread):
+    running = False
+
+    def __init__(self, wxObject, scope, interval=5):
+        self.wxObject = wxObject
+        self.scope = scope
+        self.interval = interval
+        threading.Thread.__init__(self)
+        self.running = True
+        self.start()
+
+    def run(self):
+        while True and self.running:
+            alive = True if self.scope.is_alive() else False
+            wx.PostEvent(self.wxObject, ScopeAliveEvent(self.scope, alive))
+            time.sleep(self.interval)
+
+    def stop(self):
+        self.running = False
+
+
 class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
     active_scope = None
     selected_waveform_fmt = 'timed-separated'
 
-    class CheckThread(threading.Thread):
-        def __init__(self, wxObject, interval):
-            self.wxObject = wxObject
-            self.interval = interval
-            threading.Thread.__init__(self)
-            self.start()
-
-        def run(self):
-            while True:
-                self.wxObject.check_scope_ready()
-                time.sleep(self.interval)
-
     def __init__(self, oscilloscopes):
         self.busy = False
         self.ready = False
+        self.all_check_threads = []
 
         wx.adv.TaskBarIcon.__init__(self)
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, self.on_left_down)
         self.set_tray_icon(busy=False, ready=False)
 
         for scope in oscilloscopes:
+            check = CheckScopeThread(self, scope)
+            self.all_check_threads.append(check)
             if scope.name == config.active_scope_name:
                 self._set_active_scope(scope)
 
         self.oscilloscopes = oscilloscopes
 
         self.frame = wx.Frame(None, -1)
+
+        EVT_RESULT(self, self.check_scope_ready)
 
         # just for global hotkey binding
         if on_win and config.hotkey is not None:
@@ -292,7 +324,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
                   id=item.GetId())
         menu.Append(item)
         menu_waveform_format = wx.Menu()
-        menu.Append(wx.ID_ANY, 'Waveform Format', menu_waveform_format)
+        menu.AppendSubMenu(menu_waveform_format, 'Waveform Format')
         for fmt in ['binary', 'combined', 'separated', 'timed-combined', 'timed-separated']:
             id = wx.NewIdRef(count=1)
             item = menu_waveform_format.AppendCheckItem(id, fmt)
@@ -327,7 +359,7 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         self.sources_menu = wx.Menu()
         if self.active_scope:
             self._update_sources_menu_for_scope(self.active_scope)
-            menu.Append(wx.ID_ANY, 'Select Source', self.sources_menu)
+            menu.AppendSubMenu(self.sources_menu, 'Select Source')
 
         menu.AppendSeparator()
         item = wx.MenuItem(menu, wx.ID_ABOUT, 'About..')
@@ -408,7 +440,6 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
 
     def _set_active_scope(self, scope):
         self.active_scope = scope
-        self.CheckThread(self, interval=5)
 
     def on_to_clipboard(self, event):
         self._copy_screenshot_to_clipboard()
@@ -444,9 +475,9 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         else:
             self.active_scope.add_selected_source(source)
 
-    def check_scope_ready(self):
-        ready = True if self.active_scope.is_alive() else False
-        self.set_tray_icon(ready=ready)
+    def check_scope_ready(self, msg):
+        if msg.scope == self.active_scope:
+            self.set_tray_icon(ready=msg.alive)
 
     def on_waveform_fmt_select(self, event, fmt):
         self.selected_waveform_fmt = fmt
@@ -455,9 +486,13 @@ class OscCapTaskBarIcon(wx.adv.TaskBarIcon):
         self._copy_screenshot_to_clipboard()
 
     def on_exit(self, event):
+        for thread in self.all_check_threads:
+            thread.stop()
+
         if self.active_scope:
             config.active_scope_name = self.active_scope.name
         config.save()
+
         wx.CallAfter(self.Destroy)
         if self.frame:
             wx.CallAfter(self.frame.Destroy)
@@ -483,7 +518,7 @@ def main():
 
     config.load()
     oscilloscopes = create_oscilloscopes_from_config(config)
-    app = wx.App(False)
+    app = wx.App()
     OscCapTaskBarIcon(oscilloscopes)
     app.MainLoop()
 
