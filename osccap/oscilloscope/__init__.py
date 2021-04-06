@@ -86,11 +86,13 @@ class Oscilloscope(object):
         if not self.is_alive():
             return DEFAULT_CHANNELS
 
-        if self.get_manufacturer() == 'TEKTRONIX':
-            return tektronix.get_sources(self._model)
-        elif self.get_manufacturer() == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.get_sources(self._model)
-        else:
+        try:
+            fct = {
+                'TEKTRONIX': tektronix.get_sources,
+                'KEYSIGHT TECHNOLOGIES': agilent.get_sources
+            }[self.get_manufacturer()]
+            return fct(self._model)
+        except KeyError:
             logging.warning('unsupported scope {}'.format(self._manufacturer))
             return DEFAULT_CHANNELS
 
@@ -99,11 +101,13 @@ class Oscilloscope(object):
         if not self.is_alive():
             raise NotAliveError()
 
-        if self.get_manufacturer() == 'TEKTRONIX':
-            return tektronix.take_screenshot(self.host, self._model)
-        elif self.get_manufacturer() == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.take_screenshot(self.host, self._model)
-        else:
+        try:
+            fct = {
+                'TEKTRONIX': tektronix.take_screenshot,
+                'KEYSIGHT TECHNOLOGIES': agilent.take_screenshot
+            }[self.get_manufacturer()]
+            return fct(self.host, self._model)
+        except KeyError:
             logging.warning('unsupported scope {}'.format(self._manufacturer))
             raise NotImplementedError()
 
@@ -113,16 +117,15 @@ class Oscilloscope(object):
             raise NotAliveError()
 
         self._update_manufacturer_model()
-
-        if self._manufacturer == 'KEYSIGHT TECHNOLOGIES':
-            return agilent.take_waveform(self.host,
-                                         self._model,
-                                         self.selected_sources,
-                                         waveform_format=waveform_format)
-        elif self._manufacturer == 'TEKTRONIX':
-            return tektronix.take_waveform(self.host,
-                                           self._model,
-                                           self.selected_sources)
-        else:
+        try:
+            fct = {
+                'TEKTRONIX': tektronix.take_waveform,
+                'KEYSIGHT TECHNOLOGIES': agilent.take_waveform
+            }[self.get_manufacturer()]
+            return fct(self.host,
+                       self._model,
+                       self.selected_sources,
+                       waveform_format=waveform_format)
+        except KeyError:
             logging.warning('unsupported scope {}'.format(self._manufacturer))
             raise NotImplementedError()
