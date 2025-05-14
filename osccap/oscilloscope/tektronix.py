@@ -65,7 +65,7 @@ def take_screenshot(host, model, fullscreen=True, image_format='png'):
     dev.open()
     dev.io_timeout = 10
 
-    if model in ['TDS5104', 'TDS7704B']:
+    if model in ['TDS5104', 'TDS6604', 'TDS7404', 'TDS7704B']:
         dev.write(r'EXPORT:FILENAME "C:\TEMP\SCREEN.PNG"')
         dev.write('EXPORT:FORMAT PNG')
         dev.write('EXPORT:IMAGE NORMAL')
@@ -112,7 +112,7 @@ def take_waveform(host, model, active_sources, waveform_format=None):
     dev.open()
     dev.io_timeout = 10
 
-    if model in ['TDS5104', 'TDS7704']:
+    if model in ['TDS5104', 'TDS6604', 'TDS7404', 'TDS7704']:
         raise('not supported')
 
     elif model in ['MSO54', 'MSO56', 'MSO58', 'MSO64']:
